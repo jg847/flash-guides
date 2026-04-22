@@ -6,7 +6,7 @@
 
 ## Sprint 03-A — Guest quota enforcement
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `GuestQuota` DB model, `enforceGuestQuota` middleware, quota API.
 
 **Files touched:**
