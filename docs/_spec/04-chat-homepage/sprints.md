@@ -6,7 +6,7 @@
 
 ## Sprint 04-A — Generation Orchestrator + Study Mode strategies
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Core generation pipeline: `GenerationOrchestrator`, all four study-mode strategies, `GuideBuilder`, `BaseGuideGenerator` template.
 
 **Files touched:**

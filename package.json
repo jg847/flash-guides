@@ -27,6 +27,7 @@
     "export:source": "tsx scripts/export-source.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.71",
     "@anthropic-ai/sdk": "^0.90.0",
     "@auth/prisma-adapter": "^2.11.2",
     "@fal-ai/client": "^1.9.5",
