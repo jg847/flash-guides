@@ -64,7 +64,7 @@
 
 ## Sprint 03-C — Public gallery + E2E tests
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `/gallery` page, guide card component, full E2E test suite for all quota scenarios.
 
 **Files touched:**
