@@ -103,4 +103,4 @@
 - `tests/unit/components/auth/LoginForm.test.tsx`
 
 **Entry criteria:** Sprint 02-B complete.  
-**Exit criteria:** All AC-01 through AC-15 pass; E2E tests green.
+**Exit criteria:** All AC-01 through AC-15 pass; all T-01 through T-23 pass; E2E tests green.

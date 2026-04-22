@@ -95,4 +95,4 @@
 - `tests/e2e/sharing/sharing.spec.ts`
 
 **Entry criteria:** Sprint 09-B complete.  
-**Exit criteria:** All T-01 through T-12 pass; Definition of Done checklist satisfied.
+**Exit criteria:** All T-01 through T-14 pass; Definition of Done checklist satisfied.

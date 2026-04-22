@@ -98,4 +98,4 @@
 - `tests/e2e/account/account.spec.ts`
 
 **Entry criteria:** Sprint 08-B complete.  
-**Exit criteria:** All T-01 through T-18 pass; Definition of Done checklist satisfied.
+**Exit criteria:** All T-01 through T-20 pass; Definition of Done checklist satisfied.

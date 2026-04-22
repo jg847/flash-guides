@@ -98,4 +98,4 @@
 - `tests/e2e/guide/guide-renderer.spec.ts`
 
 **Entry criteria:** Sprint 06-B complete.  
-**Exit criteria:** All T-01 through T-20 pass; Definition of Done checklist satisfied.
+**Exit criteria:** All T-01 through T-22 pass; Definition of Done checklist satisfied.

@@ -87,4 +87,4 @@
 - `tests/e2e/dashboard/dashboard.spec.ts`
 
 **Entry criteria:** Sprint 07-B complete.  
-**Exit criteria:** All T-01 through T-20 pass; Definition of Done checklist satisfied.
+**Exit criteria:** All T-01 through T-22 pass; Definition of Done checklist satisfied.

@@ -29,6 +29,7 @@
   - `**/node_modules/**`, `**/.next/**`, `**/dist/**`
   - `**/pnpm-lock.yaml`, `**/package-lock.json`, `**/yarn.lock`
   - Binary extensions: `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.ico`, `.woff`, `.woff2`, `.ttf`, `.eot`, `.otf`, `.pdf`, `.zip`, `.gz`
+- Content scan (CLI-16, defence-in-depth): after filename filtering, read each candidate file and exclude any whose content matches `ANTHROPIC_API_KEY=`, `FAL_API_KEY=`, `TAVILY_API_KEY=`, or the pattern `/[A-Z_]+=sk-[A-Za-z0-9]/`.
 - `formatSection` in `md` mode: ` ```ts\n${content}\n``` ` with detected language from extension.
 
 **Tests added:**
@@ -39,7 +40,7 @@
 - `tests/unit/lib/cli/estimate-tokens.test.ts`
 
 **Entry criteria:** Phase 0 complete.  
-**Exit criteria:** T-01 through T-09 pass; no secrets ever appear in test output.
+**Exit criteria:** T-01 through T-12 pass (includes content-based secret detection T-11 and flag-conflict edge case T-12); no secrets ever appear in test output.
 
 ---
 
@@ -66,4 +67,4 @@
 - `tests/integration/cli/export-source.test.ts` — spawns the script as a subprocess via `node:child_process` `execFile`, checks exit code and stdout content.
 
 **Entry criteria:** Sprint 10-A complete.  
-**Exit criteria:** CLI-01 through CLI-15 criteria verified; T-10 passes; Definition of Done checklist satisfied.
+**Exit criteria:** CLI-01 through CLI-16 criteria verified; all T-01 through T-12 pass; `pnpm export:source --stdout | grep -i 'API_KEY'` returns nothing; Definition of Done checklist satisfied.

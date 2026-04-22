@@ -105,4 +105,4 @@
 - `tests/e2e/generation/url-flow.spec.ts`
 
 **Entry criteria:** Sprint 04-B complete + Spec 05 Sprint 05-A complete.  
-**Exit criteria:** All three input modes work E2E; T-16 through T-19 pass.
+**Exit criteria:** All three input modes work E2E; all T-01 through T-26 pass; Definition of Done checklist satisfied.

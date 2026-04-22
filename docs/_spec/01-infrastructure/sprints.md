@@ -52,7 +52,7 @@
 - `tests/integration/api/health.test.ts` — real SQLite test DB, asserts 200/503.
 
 **Entry criteria:** Sprint 01-A complete.  
-**Exit criteria:** `pnpm db:generate` succeeds; `bootDatabase` unit test passes.
+**Exit criteria:** `pnpm db:generate` succeeds; `bootDatabase` unit tests pass (T-06 idempotent call, T-07 backup script creates parent directory).
 
 ---
 
@@ -80,4 +80,4 @@
 - `tests/e2e/health.spec.ts` — Playwright smoke test against running app.
 
 **Entry criteria:** Sprint 01-B complete.  
-**Exit criteria:** `docker compose up` healthy; `ci.yml` green on GitHub.
+**Exit criteria:** `docker compose up` healthy; `ci.yml` green on GitHub; T-08 Docker image under 500 MB; AC-08 through AC-12 verified (pre-push hook, CI coverage artifact, `docker-compose.override.yml`, named volume, healthchecks).

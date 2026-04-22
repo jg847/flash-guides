@@ -86,4 +86,4 @@
 - `tests/e2e/guest/gallery.spec.ts` — T-15
 
 **Entry criteria:** Sprint 03-B complete.  
-**Exit criteria:** All T-01 through T-16 pass; Definition of Done checklist satisfied.
+**Exit criteria:** All T-01 through T-17 pass; Definition of Done checklist satisfied.

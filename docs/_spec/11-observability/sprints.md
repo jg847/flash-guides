@@ -95,7 +95,7 @@
 - `tests/integration/middleware/rate-limit.test.ts`
 
 **Entry criteria:** Sprint 11-B complete.  
-**Exit criteria:** T-03, T-06, T-07 pass; guest 4th request returns 429 + Retry-After.
+**Exit criteria:** T-03, T-06, T-07, T-12 pass; guest 4th request returns 429 + Retry-After; rate limit window boundary (T-12) handled correctly at exact `windowEnd`.
 
 ---
 
@@ -127,4 +127,4 @@
 - `tests/e2e/observability/security-headers.spec.ts` — T-10 and T-11
 
 **Entry criteria:** Sprint 11-C complete.  
-**Exit criteria:** All T-01 through T-11 pass; Definition of Done checklist satisfied.
+**Exit criteria:** All T-01 through T-12 pass; Definition of Done checklist satisfied.

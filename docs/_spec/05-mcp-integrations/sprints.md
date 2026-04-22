@@ -91,4 +91,4 @@
 - `tests/integration/lib/mcp/adapter-compliance.test.ts`
 
 **Entry criteria:** Sprint 05-B complete.  
-**Exit criteria:** All T-01 through T-17 pass; interface compliance test confirms all adapters satisfy `IMCPClient` contract.
+**Exit criteria:** All T-01 through T-19 pass; interface compliance test confirms all adapters satisfy `IMCPClient` contract.
