@@ -73,7 +73,7 @@
 
 ## Sprint 02-C — Forgot/reset password + login page
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Forgot-password and reset-password API + pages, login page with all providers.
 
 **Files touched:**
