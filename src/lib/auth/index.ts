@@ -1,2 +1,4 @@
-// Stub — wired in Phase 1 (Spec 02)
-export {}
+import NextAuth from 'next-auth'
+import { authConfig } from './config'
+
+export const { auth, handlers, signIn, signOut } = NextAuth(authConfig)

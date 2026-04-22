@@ -1,12 +1,12 @@
 # Sprints — Spec 02: Authentication & Session Management
 
-> **Status:** 🔜 Not started — begins after Spec 01 CI is green
+> **Status:** ✅ Sprint 02-A complete
 
 ---
 
 ## Sprint 02-A — Auth.js wiring + Prisma adapter
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Wire Auth.js v5 with Prisma adapter, configure Google OAuth provider and credentials provider, set up session middleware.
 
 **Files touched:**
@@ -37,7 +37,7 @@
 
 ## Sprint 02-B — Email/password signup & verification
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Registration API, hashed passwords, email verification token + email sending.
 
 **Files touched:**
