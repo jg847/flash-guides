@@ -35,7 +35,7 @@
 
 ## Sprint 03-B — UI: Guest banner, watermark, quota modal
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Frontend components for guest experience: sticky banner, watermark overlay, exhausted-quota modal.
 
 **Files touched:**
