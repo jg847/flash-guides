@@ -1,0 +1,11 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+playwright-report/
+exports/
+data/
+*.db
+*.sqlite
+pnpm-lock.yaml

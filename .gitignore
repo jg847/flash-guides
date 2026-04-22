@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
 
 # next.js
 /.next/
@@ -19,6 +21,18 @@
 
 # production
 /build
+/dist
+
+# generated
+/src/generated/
+
+# database & data
+/data/
+*.db
+*.sqlite
+
+# exports (CLI output)
+/exports/
 
 # misc
 .DS_Store
@@ -30,12 +44,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# env files — commit .env.example only
+.env
+.env.local
+.env.*.local
 
-# vercel
+# vercel / fly
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+next-env.d.ts
+
+/src/generated/prisma
