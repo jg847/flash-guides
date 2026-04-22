@@ -217,7 +217,7 @@ Each step emits a progress SSE event before executing.
 - [ ] Guest guides rendered with watermark (not persisted).
 - [ ] Claude API failure returns 503 gracefully.
 - [ ] URL + YouTube inputs work end-to-end (requires Spec 05 Sprint 05-A).
-- [ ] All T-01 through T-21 tests passing.
+- [ ] All T-01 through T-26 tests passing.
 - [ ] Coverage ≥ 90% on `src/lib/generation/**`; overall ≥ 85% lines / ≥ 80% branches.
 - [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
 - [ ] Manual smoke test of the topic → guide happy path in Docker Compose succeeds.

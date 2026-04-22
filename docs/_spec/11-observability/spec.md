@@ -168,3 +168,5 @@ Raw `message` is replaced with "An unexpected error occurred" in production for 
 - [ ] Manual smoke test: rate limiting, security headers, and CSRF protection verified against Docker Compose instance.
 - [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
 - [ ] `docs/architecture.md` updated with middleware chain and logging patterns.
+- [ ] Coverage ≥ 85% on `src/lib/security/**`, `src/lib/rate-limit/**`, and `src/lib/logger/**`.
+- [ ] PR squash-merged to `main`.

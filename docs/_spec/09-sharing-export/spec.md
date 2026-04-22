@@ -155,6 +155,7 @@ shareLink  ShareLink?
 | T-12 | E2E         | Positive | Revoked share link renders 410 page                                       | Owner revokes link / visit `/share/[token]` / 410 page rendered, not generic 404                     |
 | T-13 | Integration | Negative | Unauthenticated user cannot fork a guide                                  | No session / POST `/api/guides/[id]/fork` / 401                                                      |
 | T-14 | Integration | Edge     | Share link with `expiresAt` in the past returns 410                       | Share link where `expiresAt < now()` / GET `/share/[token]` / 410 even though token row exists in DB |
+| T-15 | Component   | Positive | `ShareModal` renders share link input and copy button                     | Mount with valid share URL / render / URL input populated and copy button visible                    |
 
 ---
 
@@ -171,3 +172,5 @@ shareLink  ShareLink?
 - [ ] Manual smoke test: share link creation, fork, and PDF download work end-to-end in Docker Compose.
 - [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
 - [ ] `docs/architecture.md` updated if new patterns or modules were introduced.
+- [ ] Coverage ≥ 85% on `src/lib/sharing/**` and `src/lib/export/**`.
+- [ ] PR squash-merged to `main`.

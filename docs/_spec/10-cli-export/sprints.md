@@ -40,7 +40,7 @@
 - `tests/unit/lib/cli/estimate-tokens.test.ts`
 
 **Entry criteria:** Phase 0 complete.  
-**Exit criteria:** T-01 through T-12 pass (includes content-based secret detection T-11 and flag-conflict edge case T-12); no secrets ever appear in test output.
+**Exit criteria:** T-01 through T-12 pass (includes content-based secret detection T-11 and flag-conflict edge case T-12; fixture directory for T-13 E2E test also created here); no secrets ever appear in test output.
 
 ---
 
@@ -53,6 +53,7 @@
 
 - `scripts/export-source.ts` — main entry; wire all flags to core logic
 - `tests/integration/cli/export-source.test.ts`
+- `tests/fixtures/cli-fixture-repo/` — minimal fake repo for E2E T-13 (a few `.ts` files, a `.env`, a binary)
 
 **Implementation notes:**
 
@@ -65,6 +66,7 @@
 **Tests added:**
 
 - `tests/integration/cli/export-source.test.ts` — spawns the script as a subprocess via `node:child_process` `execFile`, checks exit code and stdout content.
+- `tests/e2e/cli/fixture-repo.test.ts` — T-13: runs CLI against `tests/fixtures/cli-fixture-repo/`, asserts TOC, fenced blocks, and summary footer in output.
 
 **Entry criteria:** Sprint 10-A complete.  
-**Exit criteria:** CLI-01 through CLI-16 criteria verified; all T-01 through T-12 pass; `pnpm export:source --stdout | grep -i 'API_KEY'` returns nothing; Definition of Done checklist satisfied.
+**Exit criteria:** CLI-01 through CLI-16 criteria verified; all T-01 through T-13 pass (including E2E fixture test T-13); `pnpm export:source --stdout | grep -i 'API_KEY'` returns nothing; Definition of Done checklist satisfied.

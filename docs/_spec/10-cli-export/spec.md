@@ -110,27 +110,28 @@ No new npm packages should be required.
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                                                     | Given / When / Then                                                                                 |
-| ---- | ----------- | -------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| T-01 | Unit        | Positive | `collectFiles(options)` returns correct paths for various flag combos           | Various flag combinations / call / expected path arrays returned                                    |
-| T-02 | Unit        | Positive | `applyAlwaysExclude(paths)` removes secrets, lockfiles, and binaries            | Paths including `.env`, `node_modules/`, `*.png` / call / those paths absent from result            |
-| T-03 | Unit        | Positive | `formatSection(path, content, 'md')` produces correct fenced code block         | File path + content / call / output matches ` ```lang\n...\n``` ` pattern with correct language tag |
-| T-04 | Unit        | Positive | `formatSection(path, content, 'txt')` produces plain header and content         | File path + content / call / `--- path ---` header present, no fence characters                     |
-| T-05 | Unit        | Positive | `estimateTokens(content)` returns `Math.ceil(content.length / 4)`               | String of known length / call / correct integer estimate                                            |
-| T-06 | Unit        | Positive | `--no-tests` excludes test files from collected paths                           | Directory with test and source files / `--no-tests` / only non-test files in result                 |
-| T-07 | Unit        | Positive | `--only-tests` includes only test files                                         | Directory with mixed files / `--only-tests` / only `*.test.ts`, `*.spec.ts`, `tests/**` in result   |
-| T-08 | Unit        | Positive | `--include` and `--exclude` flags compose correctly with defaults               | Specific glob flags / call / resulting file set is correct                                          |
-| T-09 | Unit        | Negative | `.env` and `prisma.config.ts` never appear in any export                        | Directory with `.env` present / collect / `.env` absent from result                                 |
-| T-10 | Integration | Positive | `pnpm export:source --stdout` exits 0 and writes Markdown to stdout             | Run CLI with `--stdout` / process exits 0 / stdout starts with summary comment                      |
-| T-11 | Unit        | Negative | Files whose content contains `ANTHROPIC_API_KEY=` are excluded (CLI-16)         | File containing `ANTHROPIC_API_KEY=sk-xxx` as content / collect / file absent from result           |
-| T-12 | Unit        | Edge     | `--no-tests` and `--only-tests` used together yields empty set without crashing | Both flags set simultaneously / collect / empty file list returned, process exits 0 with warning    |
+| #    | Type        | Category | Description                                                                       | Given / When / Then                                                                                                                                                                            |
+| ---- | ----------- | -------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `collectFiles(options)` returns correct paths for various flag combos             | Various flag combinations / call / expected path arrays returned                                                                                                                               |
+| T-02 | Unit        | Positive | `applyAlwaysExclude(paths)` removes secrets, lockfiles, and binaries              | Paths including `.env`, `node_modules/`, `*.png` / call / those paths absent from result                                                                                                       |
+| T-03 | Unit        | Positive | `formatSection(path, content, 'md')` produces correct fenced code block           | File path + content / call / output matches ` ```lang\n...\n``` ` pattern with correct language tag                                                                                            |
+| T-04 | Unit        | Positive | `formatSection(path, content, 'txt')` produces plain header and content           | File path + content / call / `--- path ---` header present, no fence characters                                                                                                                |
+| T-05 | Unit        | Positive | `estimateTokens(content)` returns `Math.ceil(content.length / 4)`                 | String of known length / call / correct integer estimate                                                                                                                                       |
+| T-06 | Unit        | Positive | `--no-tests` excludes test files from collected paths                             | Directory with test and source files / `--no-tests` / only non-test files in result                                                                                                            |
+| T-07 | Unit        | Positive | `--only-tests` includes only test files                                           | Directory with mixed files / `--only-tests` / only `*.test.ts`, `*.spec.ts`, `tests/**` in result                                                                                              |
+| T-08 | Unit        | Positive | `--include` and `--exclude` flags compose correctly with defaults                 | Specific glob flags / call / resulting file set is correct                                                                                                                                     |
+| T-09 | Unit        | Negative | `.env` and `prisma.config.ts` never appear in any export                          | Directory with `.env` present / collect / `.env` absent from result                                                                                                                            |
+| T-10 | Integration | Positive | `pnpm export:source --stdout` exits 0 and writes Markdown to stdout               | Run CLI with `--stdout` / process exits 0 / stdout starts with summary comment                                                                                                                 |
+| T-11 | Unit        | Negative | Files whose content contains `ANTHROPIC_API_KEY=` are excluded (CLI-16)           | File containing `ANTHROPIC_API_KEY=sk-xxx` as content / collect / file absent from result                                                                                                      |
+| T-12 | Unit        | Edge     | `--no-tests` and `--only-tests` used together yields empty set without crashing   | Both flags set simultaneously / collect / empty file list returned, process exits 0 with warning                                                                                               |
+| T-13 | E2E         | Positive | CLI run against a temp fixture directory produces TOC, file sections, and summary | Create temp dir with ≥3 known source files / run `tsx scripts/export-source.ts --stdout` against it / output contains each file path, correct fenced code block, and summary line count footer |
 
 ---
 
 ## 10. Definition of Done
 
 - [ ] All CLI-01 through CLI-16 criteria verified manually.
-- [ ] All T-01 through T-12 tests pass.
+- [ ] All T-01 through T-13 tests pass.
 - [ ] `pnpm export:source --stdout | head -20` shows correct header and first file.
 - [ ] `.env` and `prisma.config.ts` are not present in output (verified by grep in test).
 - [ ] `pnpm export:source --stdout | grep -i "ANTHROPIC_API_KEY"` returns nothing.
@@ -138,3 +139,5 @@ No new npm packages should be required.
 - [ ] `pnpm lint` passes.
 - [ ] Script is listed in `package.json` under `scripts.export:source`.
 - [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated with the Command pattern entry for the CLI tool.
+- [ ] PR squash-merged to `main`.

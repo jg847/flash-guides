@@ -80,4 +80,4 @@
 - `tests/e2e/health.spec.ts` — Playwright smoke test against running app.
 
 **Entry criteria:** Sprint 01-B complete.  
-**Exit criteria:** `docker compose up` healthy; `ci.yml` green on GitHub; T-08 Docker image under 500 MB; AC-08 through AC-12 verified (pre-push hook, CI coverage artifact, `docker-compose.override.yml`, named volume, healthchecks).
+**Exit criteria:** `docker compose up` healthy; `ci.yml` green on GitHub; T-08 Docker image under 200 MB (letter §4); AC-08 through AC-12 verified (pre-push hook, CI coverage artifact, `docker-compose.override.yml`, named volume, healthchecks).
