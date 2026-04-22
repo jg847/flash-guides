@@ -138,28 +138,33 @@ Raw `message` is replaced with "An unexpected error occurred" in production for 
 
 ## 9. Test Plan
 
-| ID   | Type        | Description                                                                      |
-| ---- | ----------- | -------------------------------------------------------------------------------- |
-| T-01 | Unit        | `createLogger(req)` returns pino instance with `requestId` bound in context      |
-| T-02 | Unit        | `sanitizeInput(str)` strips `<script>`, other HTML tags, and null bytes          |
-| T-03 | Unit        | `checkRateLimit(ip, window)` returns correct `allowed / count / retryAfter`      |
-| T-04 | Unit        | `buildSecurityHeaders()` returns all required headers with correct values        |
-| T-05 | Integration | Request to any route includes `x-request-id` in response                         |
-| T-06 | Integration | Guest guide POST: 4th request in same day returns HTTP 429 with `Retry-After`    |
-| T-07 | Integration | Rate limit resets after window end (mock `Date.now`)                             |
-| T-08 | Integration | Logged output contains `requestId` and no email address                          |
-| T-09 | Integration | CSRF: POST from different origin returns 403 (via Referer mismatch)              |
-| T-10 | E2E         | Browser dev tools shows security headers on homepage (`Content-Security-Policy`) |
-| T-11 | E2E         | Guest hitting quota sees the human-readable rate-limit banner                    |
+| #    | Type        | Category | Description                                                                 | Given / When / Then                                                                             |
+| ---- | ----------- | -------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `createLogger(req)` returns pino instance with `requestId` bound in context | Mock request / call / logger has `requestId` field on every log line                            |
+| T-02 | Unit        | Positive | `sanitizeInput(str)` strips HTML tags and null bytes                        | String with `<script>`, other HTML, and `\0` / call / all removed, plain text remains           |
+| T-03 | Unit        | Positive | `checkRateLimit(ip, window)` returns correct `allowed / count / retryAfter` | IP with count=2 within window / call / `{ allowed: true, count: 3 }`                            |
+| T-04 | Unit        | Positive | `buildSecurityHeaders()` returns all required headers with correct values   | Call / result / all OB-08 through OB-10 header names and values present                         |
+| T-05 | Integration | Positive | Every route response includes `x-request-id` header                         | GET /api/health / response / `x-request-id` header present, UUID v4 format                      |
+| T-06 | Integration | Negative | 4th guest request in same day returns 429 with `Retry-After`                | IP at count=3 within window / POST to generate / 429 + `Retry-After` header                     |
+| T-07 | Integration | Positive | Rate limit count resets after `windowEnd` passes                            | IP at count=3, `windowEnd` in past / POST to generate / 200 (new window, count=1)               |
+| T-08 | Integration | Positive | Log output contains `requestId` and does NOT contain email address          | Authenticated request / inspect pino log output / `requestId` present, user email absent        |
+| T-09 | Integration | Negative | POST from mismatched `Origin` header returns 403 (CSRF check)               | POST with `Origin: https://attacker.com` / request / 403                                        |
+| T-10 | E2E         | Positive | `Content-Security-Policy` header visible in browser DevTools on homepage    | Navigate to `/` / DevTools Network tab / CSP header present                                     |
+| T-11 | E2E         | Positive | Guest hitting quota sees human-readable rate-limit banner                   | Guest at count=3 / attempt guide generation / "You've created 3 guides today" message shown     |
+| T-12 | Integration | Edge     | Rate limit window reset at exact `windowEnd` boundary handled correctly     | IP at count=3, `windowEnd = Date.now()` (within 1 ms margin) / POST / count reset; 200 returned |
 
 ---
 
 ## 10. Definition of Done
 
-- [ ] All OB-01 through OB-15 criteria have passing tests or manual verification
-- [ ] `curl -I https://localhost:3000` shows all required security headers
-- [ ] No `console.log` in `src/` (enforced by ESLint `no-console` rule under `error`)
-- [ ] `pnpm test:unit` and `pnpm test:integration` pass
-- [ ] E2E T-10 and T-11 green
-- [ ] No TypeScript errors (`pnpm typecheck`)
-- [ ] `SENTRY_DSN=test pnpm build` completes without errors
+- [ ] All OB-01 through OB-15 criteria have passing tests or manual verification.
+- [ ] `curl -I https://localhost:3000` shows all required security headers.
+- [ ] No `console.log` in `src/` (enforced by ESLint `no-console` rule under `error`).
+- [ ] `pnpm test:unit` and `pnpm test:integration` pass.
+- [ ] E2E T-10, T-11, and T-12 green.
+- [ ] No TypeScript errors (`pnpm typecheck`).
+- [ ] `pnpm lint` passes.
+- [ ] `SENTRY_DSN=test pnpm build` completes without errors.
+- [ ] Manual smoke test: rate limiting, security headers, and CSRF protection verified against Docker Compose instance.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated with middleware chain and logging patterns.

@@ -175,28 +175,31 @@ Exported `authMiddleware` matched on `matcher` in `middleware.ts`. Reads session
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                               | Given / When / Then                                                      |
-| ---- | ----------- | -------- | --------------------------------------------------------- | ------------------------------------------------------------------------ |
-| T-01 | Unit        | Positive | Password hashing produces a bcrypt hash                   | Plain password / `hashPassword()` / returns `$2b$` prefixed string       |
-| T-02 | Unit        | Positive | `verifyPassword` returns true for correct password        | Hash + correct plain / `verifyPassword()` / `true`                       |
-| T-03 | Unit        | Negative | `verifyPassword` returns false for wrong password         | Hash + wrong plain / `verifyPassword()` / `false`                        |
-| T-04 | Unit        | Positive | Registration Zod schema passes valid input                | Valid data / `parse()` / no error                                        |
-| T-05 | Unit        | Negative | Registration schema rejects weak password                 | 7-char password / `parse()` / ZodError                                   |
-| T-06 | Integration | Positive | `POST /api/auth/register` creates user and sends email    | Test DB + Mailhog mock / valid payload / 201 + user in DB + email queued |
-| T-07 | Integration | Negative | `POST /api/auth/register` returns 409 for duplicate email | Existing user / same email / 409                                         |
-| T-08 | Integration | Positive | Email verification token marks user as verified           | Valid token in DB / GET verify link / `emailVerified` set                |
-| T-09 | Integration | Negative | Expired verification token returns 410                    | Token with past expiry / GET verify link / 410                           |
-| T-10 | Integration | Positive | `POST /api/auth/forgot-password` always returns 200       | Unknown email / request / 200 (no enumeration)                           |
-| T-11 | Integration | Positive | `POST /api/auth/reset-password` updates password          | Valid token / new password / 200 + password changed                      |
-| T-12 | Integration | Negative | `POST /api/auth/reset-password` rejects expired token     | Expired token / request / 410                                            |
-| T-13 | Integration | Negative | Login with unverified email returns 403                   | Unverified user / signin / 403                                           |
-| T-14 | Integration | Negative | Protected route redirects unauthenticated user            | No session / GET /dashboard / 302 to /login                              |
-| T-15 | E2E         | Positive | Full signup → verify → login flow                         | Browser / complete flow / user lands on dashboard                        |
-| T-16 | E2E         | Positive | Google OAuth login creates session                        | Mock OAuth / complete flow / session created                             |
-| T-17 | E2E         | Positive | Forgot password → reset flow                              | Browser / complete reset flow / login succeeds with new password         |
-| T-18 | E2E         | Positive | Logout destroys session                                   | Logged-in user / click logout / session gone, redirected to `/`          |
-| T-19 | Component   | Positive | Login form renders all fields and submit button           | Mount LoginForm / render / all elements present                          |
-| T-20 | Component   | Negative | Login form shows error state on server error              | Simulate server 401 / render / error banner visible                      |
+| #    | Type        | Category | Description                                                          | Given / When / Then                                                                                     |
+| ---- | ----------- | -------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | Password hashing produces a bcrypt hash                              | Plain password / `hashPassword()` / returns `$2b$` prefixed string                                      |
+| T-02 | Unit        | Positive | `verifyPassword` returns true for correct password                   | Hash + correct plain / `verifyPassword()` / `true`                                                      |
+| T-03 | Unit        | Negative | `verifyPassword` returns false for wrong password                    | Hash + wrong plain / `verifyPassword()` / `false`                                                       |
+| T-04 | Unit        | Positive | Registration Zod schema passes valid input                           | Valid data / `parse()` / no error                                                                       |
+| T-05 | Unit        | Negative | Registration schema rejects weak password                            | 7-char password / `parse()` / ZodError                                                                  |
+| T-06 | Integration | Positive | `POST /api/auth/register` creates user and sends email               | Test DB + Mailhog mock / valid payload / 201 + user in DB + email queued                                |
+| T-07 | Integration | Negative | `POST /api/auth/register` returns 409 for duplicate email            | Existing user / same email / 409                                                                        |
+| T-08 | Integration | Positive | Email verification token marks user as verified                      | Valid token in DB / GET verify link / `emailVerified` set                                               |
+| T-09 | Integration | Negative | Expired verification token returns 410                               | Token with past expiry / GET verify link / 410                                                          |
+| T-10 | Integration | Positive | `POST /api/auth/forgot-password` always returns 200                  | Unknown email / request / 200 (no enumeration)                                                          |
+| T-11 | Integration | Positive | `POST /api/auth/reset-password` updates password                     | Valid token / new password / 200 + password changed                                                     |
+| T-12 | Integration | Negative | `POST /api/auth/reset-password` rejects expired token                | Expired token / request / 410                                                                           |
+| T-13 | Integration | Negative | Login with unverified email returns 403                              | Unverified user / signin / 403                                                                          |
+| T-14 | Integration | Negative | Protected route redirects unauthenticated user                       | No session / GET /dashboard / 302 to /login                                                             |
+| T-15 | E2E         | Positive | Full signup → verify → login flow                                    | Browser / complete flow / user lands on dashboard                                                       |
+| T-16 | E2E         | Positive | Google OAuth login creates session                                   | Mock OAuth / complete flow / session created                                                            |
+| T-17 | E2E         | Positive | Forgot password → reset flow                                         | Browser / complete reset flow / login succeeds with new password                                        |
+| T-18 | E2E         | Positive | Logout destroys session                                              | Logged-in user / click logout / session gone, redirected to `/`                                         |
+| T-19 | Component   | Positive | Login form renders all fields and submit button                      | Mount LoginForm / render / all elements present                                                         |
+| T-20 | Component   | Negative | Login form shows error state on server error                         | Simulate server 401 / render / error banner visible                                                     |
+| T-21 | Integration | Edge     | Concurrent registrations with same email return 409 for one          | Two simultaneous POST /api/auth/register with same email / execute / one 201, one 409; no duplicate row |
+| T-22 | Unit        | Edge     | Registration schema accepts name at exactly 100 chars (max boundary) | 100-char name string / `parse()` / no error                                                             |
+| T-23 | Integration | Edge     | Unicode/emoji display name stored and returned correctly             | Name with emoji / register + fetch user / name intact in DB response                                    |
 
 ---
 
@@ -209,5 +212,8 @@ Exported `authMiddleware` matched on `matcher` in `middleware.ts`. Reads session
 - [ ] `pnpm test:unit` + `pnpm test:integration` + `pnpm test:e2e` all pass.
 - [ ] Coverage ≥ 90% on `src/lib/auth/**`.
 - [ ] No plain-text passwords anywhere; bcrypt cost = 12.
-- [ ] `pnpm build` passes with no TypeScript errors.
+- [ ] `pnpm lint`, `pnpm typecheck`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of the signup → verify → login flow in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated if new patterns or modules were introduced.
 - [ ] PR squash-merged to `main` with green CI.

@@ -139,20 +139,22 @@ shareLink  ShareLink?
 
 ## 9. Test Plan
 
-| ID   | Type        | Description                                                           |
-| ---- | ----------- | --------------------------------------------------------------------- |
-| T-01 | Unit        | `generateToken()` produces 32-char URL-safe string                    |
-| T-02 | Unit        | `buildMarkdownExport(guide)` outputs well-formed Markdown             |
-| T-03 | Unit        | `buildHtmlExport(guide)` includes all images as base64 data URIs      |
-| T-04 | Integration | `POST /api/guides/[id]/share` creates ShareLink row                   |
-| T-05 | Integration | `DELETE /api/guides/[id]/share` nullifies share link; GET returns 410 |
-| T-06 | Integration | `POST /api/guides/[id]/fork` creates deep-copy guide                  |
-| T-07 | Integration | Export endpoint returns correct Content-Type per format               |
-| T-08 | Integration | Export endpoint returns 403 for non-owner                             |
-| T-09 | Integration | Click count increments on each `/share/[token]` visit                 |
-| T-10 | E2E         | Share modal opens, copy button writes to clipboard (Playwright)       |
-| T-11 | E2E         | Forked guide appears in dashboard with "[Fork]" prefix                |
-| T-12 | E2E         | Revoked link shows 410 page                                           |
+| #    | Type        | Category | Description                                                               | Given / When / Then                                                                                  |
+| ---- | ----------- | -------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `generateToken()` produces 32-char URL-safe string                        | Call `generateToken()` / result / 32+ chars, only URL-safe characters present                        |
+| T-02 | Unit        | Positive | `buildMarkdownExport(guide)` outputs well-formed Markdown                 | Valid guide object / call / string with frontmatter and headings; no parse errors                    |
+| T-03 | Unit        | Positive | `buildHtmlExport(guide)` converts remote image URLs to base64 data URIs   | Guide with external image URLs / call / `<img src="data:...">` in output                             |
+| T-04 | Integration | Positive | `POST /api/guides/[id]/share` creates a `ShareLink` row                   | Authenticated owner / POST / 201 + ShareLink row in DB with correct `guideId`                        |
+| T-05 | Integration | Positive | `DELETE /api/guides/[id]/share` removes token; `GET /share/[token]` → 410 | Existing share link / DELETE then GET / 204 then 410                                                 |
+| T-06 | Integration | Positive | `POST /api/guides/[id]/fork` creates independent deep-copy guide          | Authenticated user + valid guide / POST fork / new guide rows, `[Fork]` title prefix, new IDs        |
+| T-07 | Integration | Positive | Export endpoint returns correct `Content-Type` per format                 | Valid owner / `?format=md`, `?format=html`, `?format=pdf` separately / correct Content-Type headers  |
+| T-08 | Integration | Negative | Export endpoint returns 403 for non-owner                                 | User B requests User A's guide export / GET / 403                                                    |
+| T-09 | Integration | Positive | `clickCount` increments atomically on each `/share/[token]` visit         | Share link with `clickCount=0` / two sequential GET requests / `clickCount=2`                        |
+| T-10 | E2E         | Positive | Share modal opens; copy button writes URL to clipboard                    | Logged-in user / open share modal + click copy / clipboard contains correct share URL                |
+| T-11 | E2E         | Positive | Forked guide appears in dashboard with `[Fork]` title prefix              | Registered user visits share page / click fork / dashboard shows `[Fork] <original title>`           |
+| T-12 | E2E         | Positive | Revoked share link renders 410 page                                       | Owner revokes link / visit `/share/[token]` / 410 page rendered, not generic 404                     |
+| T-13 | Integration | Negative | Unauthenticated user cannot fork a guide                                  | No session / POST `/api/guides/[id]/fork` / 401                                                      |
+| T-14 | Integration | Edge     | Share link with `expiresAt` in the past returns 410                       | Share link where `expiresAt < now()` / GET `/share/[token]` / 410 even though token row exists in DB |
 
 ---
 
@@ -163,5 +165,9 @@ shareLink  ShareLink?
 - [ ] `ShareLink` Prisma migration applied and committed
 - [ ] Export formats manually reviewed (Markdown in Obsidian, HTML offline, PDF printed)
 - [ ] No TypeScript errors (`pnpm typecheck`)
-- [ ] `pnpm test:unit` and `pnpm test:integration` pass
-- [ ] Spec 09 E2E suite green
+- [ ] `pnpm lint` passes.
+- [ ] `pnpm test:unit` and `pnpm test:integration` pass.
+- [ ] Spec 09 E2E suite green.
+- [ ] Manual smoke test: share link creation, fork, and PDF download work end-to-end in Docker Compose.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated if new patterns or modules were introduced.

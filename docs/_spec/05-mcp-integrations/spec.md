@@ -133,25 +133,27 @@ class RetryDecorator<T, R> implements IMCPClient<T, R> {
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                                     | Given / When / Then                                                      |
-| ---- | ----------- | -------- | --------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| T-01 | Unit        | Positive | `WebFetchAdapter` returns stripped text                         | MSW 200 with HTML / execute / plain text returned                        |
-| T-02 | Unit        | Negative | `WebFetchAdapter` throws on 404                                 | MSW 404 / execute / `MCPFetchError` thrown                               |
-| T-03 | Unit        | Negative | `WebFetchAdapter` throws on timeout                             | MSW delays indefinitely / execute with 200ms timeout / `MCPTimeoutError` |
-| T-04 | Unit        | Positive | `TavilySearchAdapter` parses response correctly                 | MSW mock Tavily response / execute / array of result objects             |
-| T-05 | Unit        | Negative | `TavilySearchAdapter` throws on 5xx                             | MSW 500 / execute (1 retry) / `MCPServiceError` after retries            |
-| T-06 | Unit        | Positive | `FalImageGenAdapter` returns image URL                          | MSW mock fal response / execute / `{url, alt}` returned                  |
-| T-07 | Unit        | Negative | `FalImageGenAdapter` throws `MCPRateLimitError` on 429          | MSW 429 / execute / specific error type                                  |
-| T-08 | Unit        | Positive | `YouTubeTranscriptAdapter` returns transcript                   | Mock `youtube-transcript` / execute / transcript string                  |
-| T-09 | Unit        | Negative | `YouTubeTranscriptAdapter` throws on disabled captions          | Mock throws / execute / `MCPTranscriptUnavailableError`                  |
-| T-10 | Unit        | Positive | `RetryDecorator` retries on transient errors                    | Mock fails 2× then succeeds / execute / success after retries            |
-| T-11 | Unit        | Negative | `RetryDecorator` throws after max retries                       | Mock always fails / execute / throws after 3 retries                     |
-| T-12 | Unit        | Positive | `MCPClientFactory.register` + `get` returns correct adapter     | Register mock adapter / get / same instance                              |
-| T-13 | Unit        | Negative | `MCPClientFactory.get` throws for unknown tool                  | Unknown key / get / throws                                               |
-| T-14 | Integration | Positive | Interface tests: all adapters satisfy `IMCPClient`              | Each adapter / `instanceof` check + execute signature / pass             |
-| T-15 | Integration | Positive | `WebFetchAdapter` wrapped in `RetryDecorator` retries correctly | MSW drops first 2 requests / execute / succeeds on 3rd                   |
-| T-16 | Integration | Edge     | 50k+ char webpage gets truncated cleanly                        | MSW returns 200k char HTML / execute / output ≤ 100k chars               |
-| T-17 | Integration | Edge     | Non-English page text preserved                                 | MSW returns UTF-8 Japanese HTML / execute / Japanese text in result      |
+| #    | Type        | Category | Description                                                               | Given / When / Then                                                             |
+| ---- | ----------- | -------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `WebFetchAdapter` returns stripped text                                   | MSW 200 with HTML / execute / plain text returned                               |
+| T-02 | Unit        | Negative | `WebFetchAdapter` throws on 404                                           | MSW 404 / execute / `MCPFetchError` thrown                                      |
+| T-03 | Unit        | Negative | `WebFetchAdapter` throws on timeout                                       | MSW delays indefinitely / execute with 200ms timeout / `MCPTimeoutError`        |
+| T-04 | Unit        | Positive | `TavilySearchAdapter` parses response correctly                           | MSW mock Tavily response / execute / array of result objects                    |
+| T-05 | Unit        | Negative | `TavilySearchAdapter` throws on 5xx                                       | MSW 500 / execute (1 retry) / `MCPServiceError` after retries                   |
+| T-06 | Unit        | Positive | `FalImageGenAdapter` returns image URL                                    | MSW mock fal response / execute / `{url, alt}` returned                         |
+| T-07 | Unit        | Negative | `FalImageGenAdapter` throws `MCPRateLimitError` on 429                    | MSW 429 / execute / specific error type                                         |
+| T-08 | Unit        | Positive | `YouTubeTranscriptAdapter` returns transcript                             | Mock `youtube-transcript` / execute / transcript string                         |
+| T-09 | Unit        | Negative | `YouTubeTranscriptAdapter` throws on disabled captions                    | Mock throws / execute / `MCPTranscriptUnavailableError`                         |
+| T-10 | Unit        | Positive | `RetryDecorator` retries on transient errors                              | Mock fails 2× then succeeds / execute / success after retries                   |
+| T-11 | Unit        | Negative | `RetryDecorator` throws after max retries                                 | Mock always fails / execute / throws after 3 retries                            |
+| T-12 | Unit        | Positive | `MCPClientFactory.register` + `get` returns correct adapter               | Register mock adapter / get / same instance                                     |
+| T-13 | Unit        | Negative | `MCPClientFactory.get` throws for unknown tool                            | Unknown key / get / throws                                                      |
+| T-14 | Integration | Positive | Interface tests: all adapters satisfy `IMCPClient`                        | Each adapter / `instanceof` check + execute signature / pass                    |
+| T-15 | Integration | Positive | `WebFetchAdapter` wrapped in `RetryDecorator` retries correctly           | MSW drops first 2 requests / execute / succeeds on 3rd                          |
+| T-16 | Integration | Edge     | 50k+ char webpage gets truncated cleanly                                  | MSW returns 200k char HTML / execute / output ≤ 100k chars                      |
+| T-17 | Integration | Edge     | Non-English page text preserved                                           | MSW returns UTF-8 Japanese HTML / execute / Japanese text in result             |
+| T-18 | Unit        | Edge     | `WebFetchAdapter` returns empty result gracefully when page body is empty | MSW returns 200 with empty body / execute / `{text: ""}` returned without error |
+| T-19 | Unit        | Edge     | `TavilySearchAdapter` returns empty array when search yields zero results | MSW returns `{results: []}` / execute / empty array returned without throwing   |
 
 ---
 
@@ -161,9 +163,11 @@ class RetryDecorator<T, R> implements IMCPClient<T, R> {
 - [ ] `MCPClientFactory` registered with all adapters at composition root (`src/lib/container.ts`).
 - [ ] `RetryDecorator` wraps all adapters.
 - [ ] All MCP errors use typed error classes extending `MCPError`.
-- [ ] All T-01 through T-17 tests passing.
+- [ ] All T-01 through T-19 tests passing.
 - [ ] MSW handlers added to `tests/mocks/` for all four external APIs.
 - [ ] Coverage ≥ 90% on `src/lib/mcp/**`.
 - [ ] `docs/architecture.md` updated with Factory, Adapter, Decorator entries.
-- [ ] `pnpm build` and CI green.
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of URL and YouTube generation flows in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
 - [ ] PR squash-merged to `main`.

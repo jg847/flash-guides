@@ -207,28 +207,30 @@ z.object({ tags: z.array(z.string().min(1).max(50)).max(10) })
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                            | Given / When / Then                                                 |
-| ---- | ----------- | -------- | ------------------------------------------------------ | ------------------------------------------------------------------- |
-| T-01 | Unit        | Positive | `GuideRepository.findByUser` returns correct guides    | Mock Prisma / call with userId / correct array returned             |
-| T-02 | Unit        | Positive | FTS5 search returns ranked results                     | Mock raw query / search("octopus") / ranked results                 |
-| T-03 | Unit        | Positive | `GuideRepository.toggleFavorite` flips isFavorite      | Guide with false / toggle / returns true                            |
-| T-04 | Unit        | Positive | Pagination: page 2 returns correct offset              | 25 guides / page=2, limit=10 / guides 11-20                         |
-| T-05 | Integration | Positive | `GET /api/guides` returns user's guides only           | Two users' guides in DB / authenticated as user A / only A's guides |
-| T-06 | Integration | Positive | `GET /api/guides?q=octopus` returns FTS results        | Guide with "octopus" in title / search / guide returned             |
-| T-07 | Integration | Positive | `PATCH /api/guides/[id]` updates isFavorite            | Authenticated owner / toggle / DB updated                           |
-| T-08 | Integration | Negative | `PATCH /api/guides/[id]` blocked for non-owner         | User B / patch User A's guide / 403                                 |
-| T-09 | Integration | Positive | `DELETE /api/guides` deletes multiple guides           | 3 guide IDs / delete / 3 rows gone                                  |
-| T-10 | Integration | Negative | `DELETE /api/guides` can't delete another user's guide | Mixed IDs / delete / 403                                            |
-| T-11 | Integration | Positive | `POST /api/folders` creates folder                     | Valid name / create / folder in DB                                  |
-| T-12 | Component   | Positive | `GuideCard` renders title, mode badge, date            | Mount with guide data / render / all fields visible                 |
-| T-13 | Component   | Positive | Grid/list toggle switches view mode                    | Click toggle / layout changes                                       |
-| T-14 | Component   | Positive | Empty state shown when no guides                       | Mount with empty array / render / empty state message               |
-| T-15 | Component   | Positive | Search input debounces correctly                       | Type rapidly / only 1 API call after 300ms pause                    |
-| T-16 | E2E         | Positive | Dashboard loads and shows saved guides                 | Login + generate guide / navigate to /dashboard / guide visible     |
-| T-17 | E2E         | Positive | Search finds guide by title                            | Login / search for guide title / guide appears                      |
-| T-18 | E2E         | Positive | Favourite toggle persists across reload                | Star guide / reload / still starred                                 |
-| T-19 | E2E         | Positive | Delete guide removes it from dashboard                 | Delete guide / dashboard / guide gone                               |
-| T-20 | E2E         | Negative | Unauthenticated redirected from dashboard              | No session / navigate to /dashboard / redirect to /login            |
+| #    | Type        | Category | Description                                                        | Given / When / Then                                                                          |
+| ---- | ----------- | -------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `GuideRepository.findByUser` returns correct guides                | Mock Prisma / call with userId / correct array returned                                      |
+| T-02 | Unit        | Positive | FTS5 search returns ranked results                                 | Mock raw query / search("octopus") / ranked results                                          |
+| T-03 | Unit        | Positive | `GuideRepository.toggleFavorite` flips isFavorite                  | Guide with false / toggle / returns true                                                     |
+| T-04 | Unit        | Positive | Pagination: page 2 returns correct offset                          | 25 guides / page=2, limit=10 / guides 11-20                                                  |
+| T-05 | Integration | Positive | `GET /api/guides` returns user's guides only                       | Two users' guides in DB / authenticated as user A / only A's guides                          |
+| T-06 | Integration | Positive | `GET /api/guides?q=octopus` returns FTS results                    | Guide with "octopus" in title / search / guide returned                                      |
+| T-07 | Integration | Positive | `PATCH /api/guides/[id]` updates isFavorite                        | Authenticated owner / toggle / DB updated                                                    |
+| T-08 | Integration | Negative | `PATCH /api/guides/[id]` blocked for non-owner                     | User B / patch User A's guide / 403                                                          |
+| T-09 | Integration | Positive | `DELETE /api/guides` deletes multiple guides                       | 3 guide IDs / delete / 3 rows gone                                                           |
+| T-10 | Integration | Negative | `DELETE /api/guides` can't delete another user's guide             | Mixed IDs / delete / 403                                                                     |
+| T-11 | Integration | Positive | `POST /api/folders` creates folder                                 | Valid name / create / folder in DB                                                           |
+| T-12 | Component   | Positive | `GuideCard` renders title, mode badge, date                        | Mount with guide data / render / all fields visible                                          |
+| T-13 | Component   | Positive | Grid/list toggle switches view mode                                | Click toggle / layout changes                                                                |
+| T-14 | Component   | Positive | Empty state shown when no guides                                   | Mount with empty array / render / empty state message                                        |
+| T-15 | Component   | Positive | Search input debounces correctly                                   | Type rapidly / only 1 API call after 300ms pause                                             |
+| T-16 | E2E         | Positive | Dashboard loads and shows saved guides                             | Login + generate guide / navigate to /dashboard / guide visible                              |
+| T-17 | E2E         | Positive | Search finds guide by title                                        | Login / search for guide title / guide appears                                               |
+| T-18 | E2E         | Positive | Favourite toggle persists across reload                            | Star guide / reload / still starred                                                          |
+| T-19 | E2E         | Positive | Delete guide removes it from dashboard                             | Delete guide / dashboard / guide gone                                                        |
+| T-20 | E2E         | Negative | Unauthenticated redirected from dashboard                          | No session / navigate to /dashboard / redirect to /login                                     |
+| T-21 | Integration | Edge     | FTS5 search with Unicode/non-English query matches guide correctly | Guide with Japanese title in DB / search with matching Japanese query / guide returned       |
+| T-22 | Integration | Edge     | Concurrent DELETE requests for same guide do not produce 500       | Two simultaneous DELETE with same guide ID / both resolve / guide deleted once; no 500 error |
 
 ---
 
@@ -241,8 +243,11 @@ z.object({ tags: z.array(z.string().min(1).max(50)).max(10) })
 - [ ] Bulk delete with confirmation.
 - [ ] Tag management on guide cards.
 - [ ] Usage summary in sidebar.
-- [ ] All T-01 through T-20 tests passing.
+- [ ] All T-01 through T-22 tests passing.
 - [ ] Coverage ≥ 85% on `src/lib/db/repositories/guides.ts`.
 - [ ] FTS5 migration script committed and tested.
-- [ ] `pnpm build` and CI green.
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of dashboard search, folders, and bulk-delete in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated if new patterns or modules were introduced.
 - [ ] PR squash-merged to `main`.

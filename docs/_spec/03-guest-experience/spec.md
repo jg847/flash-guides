@@ -141,24 +141,25 @@ Server Component page. No API route needed — direct Prisma query for `isPublic
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                         | Given / When / Then                                                                |
-| ---- | ----------- | -------- | --------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| T-01 | Unit        | Positive | `enforceGuestQuota` allows request when count < 3   | IP with count=2 / check / passes                                                   |
-| T-02 | Unit        | Negative | `enforceGuestQuota` blocks request when count = 3   | IP with count=3 / check / 429                                                      |
-| T-03 | Unit        | Positive | `enforceGuestQuota` resets count after midnight     | IP with count=3, resetAt in past / check / count reset, passes                     |
-| T-04 | Unit        | Positive | Registered user bypasses quota check                | Authenticated session / check / always passes                                      |
-| T-05 | Integration | Positive | Guest generates 3 guides successfully               | Test DB / 3 sequential requests from same IP / all 200                             |
-| T-06 | Integration | Negative | 4th request from same IP returns 429                | Test DB / 4th request / 429 + signupUrl                                            |
-| T-07 | Integration | Positive | Guest quota resets at midnight                      | IP at count=3, resetAt=yesterday / new request / 200                               |
-| T-08 | Integration | Positive | `GET /api/guest/quota` returns correct count        | IP with 1 guide used / request / `{used:1, limit:3}`                               |
-| T-09 | Integration | Positive | Registered user is never quota-blocked              | Authenticated user / unlimited requests / all pass                                 |
-| T-10 | Component   | Positive | Guest banner renders with correct count             | Mount with `used=2` / render / "2 of 3 free guides" visible                        |
-| T-11 | Component   | Positive | Quota-exhausted modal renders                       | Mount with `used=3` / render / signup CTA visible, input disabled                  |
-| T-12 | Component   | Positive | Watermark overlay renders on guest guide            | Mount GuideRenderer with `isWatermark=true` / render / watermark element present   |
-| T-13 | E2E         | Positive | Guest can generate and view 3 guides                | Browser, no login / generate 3 guides / all load with watermark                    |
-| T-14 | E2E         | Negative | Guest sees quota modal on 4th attempt               | Browser, 3 guides used / attempt 4th / modal shown                                 |
-| T-15 | E2E         | Positive | Gallery page loads without login                    | Browser / navigate to /gallery / guide cards visible                               |
-| T-16 | E2E         | Edge     | Two browser tabs generate simultaneously near quota | Two tabs at count=2 / both submit at once / only one succeeds (server-side atomic) |
+| #    | Type        | Category | Description                                               | Given / When / Then                                                                      |
+| ---- | ----------- | -------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `enforceGuestQuota` allows request when count < 3         | IP with count=2 / check / passes                                                         |
+| T-02 | Unit        | Negative | `enforceGuestQuota` blocks request when count = 3         | IP with count=3 / check / 429                                                            |
+| T-03 | Unit        | Positive | `enforceGuestQuota` resets count after midnight           | IP with count=3, resetAt in past / check / count reset, passes                           |
+| T-04 | Unit        | Positive | Registered user bypasses quota check                      | Authenticated session / check / always passes                                            |
+| T-05 | Integration | Positive | Guest generates 3 guides successfully                     | Test DB / 3 sequential requests from same IP / all 200                                   |
+| T-06 | Integration | Negative | 4th request from same IP returns 429                      | Test DB / 4th request / 429 + signupUrl                                                  |
+| T-07 | Integration | Positive | Guest quota resets at midnight                            | IP at count=3, resetAt=yesterday / new request / 200                                     |
+| T-08 | Integration | Positive | `GET /api/guest/quota` returns correct count              | IP with 1 guide used / request / `{used:1, limit:3}`                                     |
+| T-09 | Integration | Positive | Registered user is never quota-blocked                    | Authenticated user / unlimited requests / all pass                                       |
+| T-10 | Component   | Positive | Guest banner renders with correct count                   | Mount with `used=2` / render / "2 of 3 free guides" visible                              |
+| T-11 | Component   | Positive | Quota-exhausted modal renders                             | Mount with `used=3` / render / signup CTA visible, input disabled                        |
+| T-12 | Component   | Positive | Watermark overlay renders on guest guide                  | Mount GuideRenderer with `isWatermark=true` / render / watermark element present         |
+| T-13 | E2E         | Positive | Guest can generate and view 3 guides                      | Browser, no login / generate 3 guides / all load with watermark                          |
+| T-14 | E2E         | Negative | Guest sees quota modal on 4th attempt                     | Browser, 3 guides used / attempt 4th / modal shown                                       |
+| T-15 | E2E         | Positive | Gallery page loads without login                          | Browser / navigate to /gallery / guide cards visible                                     |
+| T-16 | E2E         | Edge     | Two browser tabs generate simultaneously near quota       | Two tabs at count=2 / both submit at once / only one succeeds (server-side atomic)       |
+| T-17 | Component   | Edge     | Gallery empty state renders when no featured guides exist | Mount `GalleryPage` with empty guides array / render / "Check back soon" message visible |
 
 ---
 
@@ -170,7 +171,10 @@ Server Component page. No API route needed — direct Prisma query for `isPublic
 - [ ] Guest banner component shows live quota count.
 - [ ] Quota-exhausted modal appears correctly at limit.
 - [ ] `/gallery` page renders public guides without auth.
-- [ ] All T-01 through T-16 tests passing.
+- [ ] All T-01 through T-17 tests passing.
 - [ ] Coverage ≥ 85% on `src/lib/guest/**` and the quota middleware.
-- [ ] `pnpm build` and CI green.
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of the guest quota and gallery flows in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated if new patterns or modules were introduced.
 - [ ] PR squash-merged to `main`.

@@ -178,26 +178,28 @@ z.object({ password: z.string() })
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                                 | Given / When / Then                                          |
-| ---- | ----------- | -------- | ----------------------------------------------------------- | ------------------------------------------------------------ |
-| T-01 | Unit        | Positive | `UserRepository.updateProfile` updates name                 | Mock Prisma / update / returns updated user                  |
-| T-02 | Unit        | Positive | Avatar upload validates MIME type                           | File with `image/png` / validate / passes                    |
-| T-03 | Unit        | Negative | Avatar upload rejects oversized file                        | File > 2MB / validate / throws                               |
-| T-04 | Unit        | Positive | `generateDataExport` produces valid zip structure           | Mock guides + notes / generate / zip contains expected files |
-| T-05 | Integration | Positive | `PATCH /api/account/profile` updates name                   | Authenticated user / valid name / 200 + DB updated           |
-| T-06 | Integration | Positive | `PATCH /api/account/email` sends verification               | Valid new email / request / email queued + pendingEmail set  |
-| T-07 | Integration | Negative | `PATCH /api/account/email` returns 409 for taken email      | Existing email / request / 409                               |
-| T-08 | Integration | Positive | `PATCH /api/account/password` updates with correct current  | Correct current + valid new / request / 200 + hash updated   |
-| T-09 | Integration | Negative | `PATCH /api/account/password` returns 401 for wrong current | Wrong current / request / 401                                |
-| T-10 | Integration | Positive | `DELETE /api/account/oauth/google` removes provider         | 2 providers linked / disconnect / provider row gone          |
-| T-11 | Integration | Negative | Cannot disconnect only login method                         | 1 provider only / disconnect / 400                           |
-| T-12 | Integration | Positive | `POST /api/account/export` returns zip download URL         | Authenticated user / request / downloadUrl in response       |
-| T-13 | Integration | Positive | `DELETE /api/account` deletes all user data                 | Correct password / request / all guides/notes/user deleted   |
-| T-14 | Integration | Negative | `DELETE /api/account` returns 401 for wrong password        | Wrong password / request / 401                               |
-| T-15 | E2E         | Positive | Update name via account page                                | Login / update name / name shown updated in nav              |
-| T-16 | E2E         | Positive | Change password flow                                        | Login / change password / log out / log in with new password |
-| T-17 | E2E         | Positive | Export data downloads zip                                   | Login / click export / zip downloaded                        |
-| T-18 | E2E         | Positive | Delete account flow                                         | Login / delete account / redirected to `/`, account gone     |
+| #    | Type        | Category | Description                                                               | Given / When / Then                                            |
+| ---- | ----------- | -------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| T-01 | Unit        | Positive | `UserRepository.updateProfile` updates name                               | Mock Prisma / update / returns updated user                    |
+| T-02 | Unit        | Positive | Avatar upload validates MIME type                                         | File with `image/png` / validate / passes                      |
+| T-03 | Unit        | Negative | Avatar upload rejects oversized file                                      | File > 2MB / validate / throws                                 |
+| T-04 | Unit        | Positive | `generateDataExport` produces valid zip structure                         | Mock guides + notes / generate / zip contains expected files   |
+| T-05 | Integration | Positive | `PATCH /api/account/profile` updates name                                 | Authenticated user / valid name / 200 + DB updated             |
+| T-06 | Integration | Positive | `PATCH /api/account/email` sends verification                             | Valid new email / request / email queued + pendingEmail set    |
+| T-07 | Integration | Negative | `PATCH /api/account/email` returns 409 for taken email                    | Existing email / request / 409                                 |
+| T-08 | Integration | Positive | `PATCH /api/account/password` updates with correct current                | Correct current + valid new / request / 200 + hash updated     |
+| T-09 | Integration | Negative | `PATCH /api/account/password` returns 401 for wrong current               | Wrong current / request / 401                                  |
+| T-10 | Integration | Positive | `DELETE /api/account/oauth/google` removes provider                       | 2 providers linked / disconnect / provider row gone            |
+| T-11 | Integration | Negative | Cannot disconnect only login method                                       | 1 provider only / disconnect / 400                             |
+| T-12 | Integration | Positive | `POST /api/account/export` returns zip download URL                       | Authenticated user / request / downloadUrl in response         |
+| T-13 | Integration | Positive | `DELETE /api/account` deletes all user data                               | Correct password / request / all guides/notes/user deleted     |
+| T-14 | Integration | Negative | `DELETE /api/account` returns 401 for wrong password                      | Wrong password / request / 401                                 |
+| T-15 | E2E         | Positive | Update name via account page                                              | Login / update name / name shown updated in nav                |
+| T-16 | E2E         | Positive | Change password flow                                                      | Login / change password / log out / log in with new password   |
+| T-17 | E2E         | Positive | Export data downloads zip                                                 | Login / click export / zip downloaded                          |
+| T-18 | E2E         | Positive | Delete account flow                                                       | Login / delete account / redirected to `/`, account gone       |
+| T-19 | Integration | Edge     | Unicode/emoji in display name saved and returned without corruption       | PATCH profile with emoji name / 200 + name stored intact in DB |
+| T-20 | Unit        | Edge     | Avatar upload rejects file with wrong magic bytes despite valid extension | `.jpg` file with PNG magic bytes / MIME validate / 422         |
 
 ---
 
@@ -208,7 +210,10 @@ z.object({ password: z.string() })
 - [ ] Email change flow with re-verification working.
 - [ ] Data export zip correct and downloadable.
 - [ ] Account deletion cascades all user data.
-- [ ] All T-01 through T-18 tests passing.
+- [ ] All T-01 through T-20 tests passing.
 - [ ] Coverage ≥ 85% on `src/app/api/account/**`.
-- [ ] `pnpm build` and CI green.
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of profile update, email change, and account deletion in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated if new patterns or modules were introduced.
 - [ ] PR squash-merged to `main`.

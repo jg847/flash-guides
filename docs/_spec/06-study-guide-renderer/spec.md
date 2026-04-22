@@ -174,28 +174,30 @@ z.object({
 
 ## 9. Test Plan
 
-| #    | Type        | Category      | Description                                             | Given / When / Then                                                 |
-| ---- | ----------- | ------------- | ------------------------------------------------------- | ------------------------------------------------------------------- |
-| T-01 | Component   | Positive      | `GuideRenderer` renders TOC from MDX headings           | MDX with 3 H2s / render / 3 TOC links                               |
-| T-02 | Component   | Positive      | `CollapsibleSection` opens/closes on click              | Mount closed / click header / content visible                       |
-| T-03 | Component   | Positive      | `FlashcardDeck` flips card on click                     | Mount / click card / back face visible                              |
-| T-04 | Component   | Positive      | `FlashcardDeck` navigates forward and wraps             | Mount with 3 cards / click Next x3 / back to card 1                 |
-| T-05 | Component   | Positive      | `InlineQuiz` shows correct feedback on right answer     | Mount / select correct answer + click check / green feedback        |
-| T-06 | Component   | Negative      | `InlineQuiz` shows incorrect feedback on wrong answer   | Mount / select wrong answer / red feedback                          |
-| T-07 | Component   | Positive      | Reading progress bar updates on scroll                  | Simulate scroll 50% / `ProgressBar.value` = ~50                     |
-| T-08 | Component   | Positive      | Dark mode toggle updates `<html>` class                 | Click toggle / `document.documentElement.classList` contains "dark" |
-| T-09 | Component   | Positive      | Highlight-to-note tooltip shown on text selection       | Simulate mouseup with selection / tooltip visible                   |
-| T-10 | Component   | Positive      | Guest sees signup tooltip on text selection             | Mount unauthenticated / select text / "Sign up to save" message     |
-| T-11 | Component   | Accessibility | All interactive elements reachable via Tab              | Render full guide / tabIndex / no focus traps                       |
-| T-12 | Integration | Positive      | `POST /api/notes` saves note to DB                      | Authenticated user + valid body / request / 201 + row in DB         |
-| T-13 | Integration | Negative      | `POST /api/notes` rejects note for another user's guide | User A tries to note User B's private guide / request / 403         |
-| T-14 | Integration | Positive      | Follow-up chat streams response with guide context      | Mock Claude / message sent / SSE stream received                    |
-| T-15 | Integration | Negative      | Follow-up chat requires auth                            | No session / request / 401                                          |
-| T-16 | E2E         | Positive      | Full guide page renders all sections and TOC            | Load /guide/slug / all headings visible in TOC                      |
-| T-17 | E2E         | Positive      | Flashcard interaction works                             | Load guide / flip 3 cards / all flip correctly                      |
-| T-18 | E2E         | Positive      | Quiz answer flow                                        | Load guide / answer quiz / feedback shown                           |
-| T-19 | E2E         | Positive      | Highlight + save note                                   | Load guide / select text / click save / note saved                  |
-| T-20 | E2E         | Positive      | Dark mode persists across page reload                   | Toggle dark / reload / still dark                                   |
+| #    | Type        | Category      | Description                                                         | Given / When / Then                                                                          |
+| ---- | ----------- | ------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| T-01 | Component   | Positive      | `GuideRenderer` renders TOC from MDX headings                       | MDX with 3 H2s / render / 3 TOC links                                                        |
+| T-02 | Component   | Positive      | `CollapsibleSection` opens/closes on click                          | Mount closed / click header / content visible                                                |
+| T-03 | Component   | Positive      | `FlashcardDeck` flips card on click                                 | Mount / click card / back face visible                                                       |
+| T-04 | Component   | Positive      | `FlashcardDeck` navigates forward and wraps                         | Mount with 3 cards / click Next x3 / back to card 1                                          |
+| T-05 | Component   | Positive      | `InlineQuiz` shows correct feedback on right answer                 | Mount / select correct answer + click check / green feedback                                 |
+| T-06 | Component   | Negative      | `InlineQuiz` shows incorrect feedback on wrong answer               | Mount / select wrong answer / red feedback                                                   |
+| T-07 | Component   | Positive      | Reading progress bar updates on scroll                              | Simulate scroll 50% / `ProgressBar.value` = ~50                                              |
+| T-08 | Component   | Positive      | Dark mode toggle updates `<html>` class                             | Click toggle / `document.documentElement.classList` contains "dark"                          |
+| T-09 | Component   | Positive      | Highlight-to-note tooltip shown on text selection                   | Simulate mouseup with selection / tooltip visible                                            |
+| T-10 | Component   | Positive      | Guest sees signup tooltip on text selection                         | Mount unauthenticated / select text / "Sign up to save" message                              |
+| T-11 | Component   | Accessibility | All interactive elements reachable via Tab                          | Render full guide / tabIndex / no focus traps                                                |
+| T-12 | Integration | Positive      | `POST /api/notes` saves note to DB                                  | Authenticated user + valid body / request / 201 + row in DB                                  |
+| T-13 | Integration | Negative      | `POST /api/notes` rejects note for another user's guide             | User A tries to note User B's private guide / request / 403                                  |
+| T-14 | Integration | Positive      | Follow-up chat streams response with guide context                  | Mock Claude / message sent / SSE stream received                                             |
+| T-15 | Integration | Negative      | Follow-up chat requires auth                                        | No session / request / 401                                                                   |
+| T-16 | E2E         | Positive      | Full guide page renders all sections and TOC                        | Load /guide/slug / all headings visible in TOC                                               |
+| T-17 | E2E         | Positive      | Flashcard interaction works                                         | Load guide / flip 3 cards / all flip correctly                                               |
+| T-18 | E2E         | Positive      | Quiz answer flow                                                    | Load guide / answer quiz / feedback shown                                                    |
+| T-19 | E2E         | Positive      | Highlight + save note                                               | Load guide / select text / click save / note saved                                           |
+| T-20 | E2E         | Positive      | Dark mode persists across page reload                               | Toggle dark / reload / still dark                                                            |
+| T-21 | Component   | Edge          | Guide with no flashcards renders without the flashcard deck section | Mount `GuideRenderer` with guide lacking flashcards / render / no flashcard component in DOM |
+| T-22 | Component   | Edge          | RTL/non-English text content renders without layout overflow        | Mount guide with Arabic body text / render / text visible; no CSS overflow or clipping       |
 
 ---
 
@@ -208,7 +210,10 @@ z.object({
 - [ ] Follow-up chat streaming operational.
 - [ ] Reading progress bar live.
 - [ ] ARIA labels and keyboard nav verified.
-- [ ] All T-01 through T-20 tests passing.
+- [ ] All T-01 through T-22 tests passing.
 - [ ] Coverage ≥ 85% on `src/components/guide/**`.
-- [ ] `pnpm build` and CI green.
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of the full guide render flow in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [ ] `docs/architecture.md` updated if new patterns or modules were introduced.
 - [ ] PR squash-merged to `main`.

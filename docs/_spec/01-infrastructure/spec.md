@@ -23,15 +23,20 @@ This spec covers all repository scaffolding, tooling, and deployment infrastruct
 
 ## 3. Acceptance Criteria
 
-| #     | Story | Given                                   | When                                         | Then                                                                                            |
-| ----- | ----- | --------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| AC-01 | US-1  | A fresh clone of the repo               | `pnpm install && pnpm build` is run          | Build completes with 0 errors                                                                   |
-| AC-02 | US-2  | A push or PR is opened                  | GitHub Actions `ci.yml` triggers             | Lint, typecheck, unit, integration, build, and e2e all pass                                     |
-| AC-03 | US-3  | `.env` is populated from `.env.example` | `docker compose up` is run from `docker/`    | All three services start healthy; app responds on port 3000                                     |
-| AC-04 | US-4  | A merge to `main` occurs                | GitHub Actions `docker.yml` triggers         | Image is pushed to GHCR and deployed to Fly.io                                                  |
-| AC-05 | US-5  | The app starts                          | Boot sequence runs                           | `PRAGMA journal_mode = WAL` is confirmed active; backup script exists at `scripts/backup-db.sh` |
-| AC-06 | US-2  | A staged file violates lint rules       | `git commit` is attempted                    | Husky `pre-commit` blocks the commit and prints the lint error                                  |
-| AC-07 | US-2  | A commit message is not conventional    | `git commit` is attempted with a bad message | Husky `commit-msg` blocks the commit                                                            |
+| #     | Story | Given                                    | When                                         | Then                                                                                                 |
+| ----- | ----- | ---------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| AC-01 | US-1  | A fresh clone of the repo                | `pnpm install && pnpm build` is run          | Build completes with 0 errors                                                                        |
+| AC-02 | US-2  | A push or PR is opened                   | GitHub Actions `ci.yml` triggers             | Lint, typecheck, unit, integration, build, and e2e all pass                                          |
+| AC-03 | US-3  | `.env` is populated from `.env.example`  | `docker compose up` is run from `docker/`    | All three services start healthy; app responds on port 3000                                          |
+| AC-04 | US-4  | A merge to `main` occurs                 | GitHub Actions `docker.yml` triggers         | Image is pushed to GHCR and deployed to Fly.io                                                       |
+| AC-05 | US-5  | The app starts                           | Boot sequence runs                           | `PRAGMA journal_mode = WAL` is confirmed active; backup script exists at `scripts/backup-db.sh`      |
+| AC-06 | US-2  | A staged file violates lint rules        | `git commit` is attempted                    | Husky `pre-commit` blocks the commit and prints the lint error                                       |
+| AC-07 | US-2  | A commit message is not conventional     | `git commit` is attempted with a bad message | Husky `commit-msg` blocks the commit                                                                 |
+| AC-08 | US-2  | A `git push` is attempted                | The pre-push hook runs                       | `pnpm typecheck && pnpm test:unit` execute; push is blocked if either fails                          |
+| AC-09 | US-2  | CI completes on any branch               | `ci.yml` finishes its test steps             | A coverage report artifact is uploaded and accessible from the workflow run summary                  |
+| AC-10 | US-3  | `docker-compose.override.yml` is present | `docker compose up` is run in dev            | Hot-reload is active: editing a source file triggers a Next.js fast-refresh in the running container |
+| AC-11 | US-3  | `docker-compose.yml` is inspected        | Volume config is read                        | A named volume `flashguides_data` is declared and mounted at `/data` inside the `web` container      |
+| AC-12 | US-3  | `docker compose up` has run              | All three services are healthy               | `docker compose ps` shows `(healthy)` for `web`, `minio`, and `mailhog`                              |
 
 ---
 
@@ -96,13 +101,16 @@ None — this is the foundation spec.
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                        | Given / When / Then                                                      |
-| ---- | ----------- | -------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
-| T-01 | Integration | Positive | Health endpoint returns 200 when DB is up          | DB running / GET /api/health / 200 + `{status:"ok"}`                     |
-| T-02 | Integration | Negative | Health endpoint returns 503 when DB is unreachable | DB killed / GET /api/health / 503 + `{status:"error"}`                   |
-| T-03 | Unit        | Positive | `bootDatabase` runs all 5 PRAGMAs                  | Mock Prisma / `bootDatabase()` called / 5 `$executeRawUnsafe` calls made |
-| T-04 | Unit        | Positive | Backup script prunes files older than 14 days      | Fixture dir with old/new files / script runs / only recent files remain  |
-| T-05 | E2E         | Positive | App loads over Docker Compose                      | `docker compose up` / navigate to `http://localhost:3000` / 200 response |
+| #    | Type        | Category | Description                                                         | Given / When / Then                                                                                             |
+| ---- | ----------- | -------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| T-01 | Integration | Positive | Health endpoint returns 200 when DB is up                           | DB running / GET /api/health / 200 + `{status:"ok"}`                                                            |
+| T-02 | Integration | Negative | Health endpoint returns 503 when DB is unreachable                  | DB killed / GET /api/health / 503 + `{status:"error"}`                                                          |
+| T-03 | Unit        | Positive | `bootDatabase` runs all 5 PRAGMAs                                   | Mock Prisma / `bootDatabase()` called / 5 `$executeRawUnsafe` calls made                                        |
+| T-04 | Unit        | Positive | Backup script prunes files older than 14 days                       | Fixture dir with old/new files / script runs / only recent files remain                                         |
+| T-05 | E2E         | Positive | App loads over Docker Compose                                       | `docker compose up` / navigate to `http://localhost:3000` / 200 response                                        |
+| T-06 | Unit        | Edge     | `bootDatabase` is idempotent when WAL mode is already set           | SQLite in WAL mode / `bootDatabase()` called twice / no error thrown; `journal_mode` still returns `wal`        |
+| T-07 | Unit        | Edge     | Backup script creates `/data/backups/` when the directory is absent | Directory missing / script runs / directory created and `.sqlite` backup file present                           |
+| T-08 | Integration | Edge     | Docker image size stays within the 200 MB target                    | Built image inspected / `docker image inspect` / compressed size ≤ 200 MB (asserted in CI step or manual smoke) |
 
 ---
 
@@ -119,3 +127,6 @@ None — this is the foundation spec.
 - [x] `.env.example` committed with all variables documented.
 - [x] `fly.toml` committed.
 - [x] Initial commit squash-merged to `main` with green CI.
+- [ ] `pnpm test` achieves ≥ 85% line coverage, ≥ 80% branch coverage (CI-enforced via Vitest thresholds).
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in Phase 0 code without a linked issue.
+- [ ] `docs/architecture.md` committed (required by letter §11 item 4).

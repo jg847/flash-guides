@@ -25,22 +25,22 @@ The Chat Homepage is the primary entry point of FlashGuides. It presents a chat-
 
 ## 3. Acceptance Criteria
 
-| #     | Story | Given                                | When                                     | Then                                                                                              |
-| ----- | ----- | ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| AC-01 | US-1  | Any user on homepage                 | Types a topic and submits                | Streaming starts within 3s; guide page rendered on completion                                     |
-| AC-02 | US-2  | Any user                             | Pastes ≤50,000 chars of text and submits | Guide generated from the pasted content                                                           |
-| AC-03 | US-2  | Any user                             | Pastes text > 50,000 chars               | 422 with "Text too long (max 50,000 characters)"                                                  |
-| AC-04 | US-3  | Any user                             | Submits a valid HTTPS URL                | Web Fetch MCP fetches page; guide generated                                                       |
-| AC-05 | US-3  | Any user                             | Submits a YouTube URL                    | YouTube transcript fetched; guide generated                                                       |
-| AC-06 | US-3  | Any user                             | Submits a malformed or unreachable URL   | 422 with clear error message; no generation                                                       |
-| AC-07 | US-3  | Any user                             | Submits a paywalled or bot-blocked URL   | Graceful degradation: error message + suggestion to paste text                                    |
-| AC-08 | US-4  | User opens homepage                  | Study mode selector rendered             | Four modes visible; Overview selected by default                                                  |
-| AC-09 | US-5  | Generation in progress               | User watches the UI                      | Streaming token chunks rendered live; progress steps shown (Fetching → Planning → Writing → Done) |
-| AC-10 | US-6  | Registered user completes generation | Guide fully streamed                     | Guide saved to DB with correct `userId`, `studyMode`, `inputType`, `slug`                         |
-| AC-11 | US-6  | Registered user                      | Guide saved                              | Redirect to `/guide/<slug>` after completion                                                      |
-| AC-12 | US-1  | Guest                                | Guide generated                          | Guide rendered at temporary URL (not persisted); watermarked                                      |
-| AC-13 | US-7  | Claude API is down                   | User submits prompt                      | 503 with "AI service unavailable, please try again" — no crash                                    |
-| AC-14 | —     | Stream dropped mid-generation        | Connection interrupted                   | UI shows "Generation interrupted" with retry button                                               |
+| #     | Story | Given                                | When                                     | Then                                                                                                          |
+| ----- | ----- | ------------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| AC-01 | US-1  | Any user on homepage                 | Types a topic and submits                | Streaming starts within 3s; guide page rendered on completion                                                 |
+| AC-02 | US-2  | Any user                             | Pastes ≤50,000 chars of text and submits | Guide generated from the pasted content                                                                       |
+| AC-03 | US-2  | Any user                             | Pastes text > 50,000 chars               | 422 with "Text too long (max 50,000 characters)"                                                              |
+| AC-04 | US-3  | Any user                             | Submits a valid HTTPS URL                | Web Fetch MCP fetches page; guide generated                                                                   |
+| AC-05 | US-3  | Any user                             | Submits a YouTube URL                    | YouTube transcript fetched; guide generated                                                                   |
+| AC-06 | US-3  | Any user                             | Submits a malformed or unreachable URL   | 422 with clear error message; no generation                                                                   |
+| AC-07 | US-3  | Any user                             | Submits a paywalled or bot-blocked URL   | Graceful degradation: error message + suggestion to paste text                                                |
+| AC-08 | US-4  | User opens homepage                  | Study mode selector rendered             | Four modes visible; Overview selected by default                                                              |
+| AC-09 | US-5  | Generation in progress               | User watches the UI                      | Streaming token chunks rendered live; progress steps shown (Fetching → Planning → Writing → Done)             |
+| AC-10 | US-6  | Registered user completes generation | Guide fully streamed                     | Guide saved to DB with correct `userId`, `studyMode`, `inputType`, `slug`                                     |
+| AC-11 | US-6  | Registered user                      | Guide saved                              | Redirect to `/guide/<slug>` after completion                                                                  |
+| AC-12 | US-1  | Guest                                | Guide generated                          | Guide stored with `userId=null, isWatermark=true`; rendered at temporary URL; not shown in any user dashboard |
+| AC-13 | US-7  | Claude API is down                   | User submits prompt                      | 503 with "AI service unavailable, please try again" — no crash                                                |
+| AC-14 | —     | Stream dropped mid-generation        | Connection interrupted                   | UI shows "Generation interrupted" with retry button                                                           |
 
 ---
 
@@ -177,29 +177,34 @@ Each step emits a progress SSE event before executing.
 
 ## 9. Test Plan
 
-| #    | Type        | Category | Description                                                         | Given / When / Then                                                 |
-| ---- | ----------- | -------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| T-01 | Unit        | Positive | `GenerationOrchestrator` calls steps in correct order               | Mock all deps / `orchestrate()` / steps called in sequence          |
-| T-02 | Unit        | Positive | `OverviewStrategy.planSections` returns correct section schema      | Mock Claude / call / returns structured sections                    |
-| T-03 | Unit        | Positive | `DeepDiveStrategy.planSections` returns more sections than Overview | Mock Claude / call / section count > Overview                       |
-| T-04 | Unit        | Positive | `ExamPrepStrategy.buildQuizzes` returns quiz items                  | Mock Claude / call / array of quiz objects returned                 |
-| T-05 | Unit        | Positive | `ELI5Strategy` simplifies language in prompt                        | Mock Claude / call / prompt contains "explain like I'm 5"           |
-| T-06 | Unit        | Positive | `GuideBuilder.build` assembles valid MDX string                     | Valid sections input / build / MDX parses without error             |
-| T-07 | Unit        | Negative | Input validation rejects text > 50,000 chars                        | 50001-char string / Zod parse / ZodError                            |
-| T-08 | Unit        | Negative | Input validation rejects empty inputValue                           | Empty string / Zod parse / ZodError                                 |
-| T-09 | Unit        | Edge     | Slug generation produces unique URL-safe slugs                      | Same title x2 / `generateSlug()` / different cuid suffixes          |
-| T-10 | Integration | Positive | `POST /api/generate` streams tokens for topic input                 | MSW mocks Claude / valid TOPIC request / SSE stream received        |
-| T-11 | Integration | Positive | Registered user guide saved to DB after stream                      | Authenticated session + mock Claude / complete / guide row in DB    |
-| T-12 | Integration | Negative | Guest guide NOT saved to DB                                         | No session + mock Claude / complete / no DB row; `isWatermark=true` |
-| T-13 | Integration | Negative | `POST /api/generate` returns 429 at quota                           | IP at count=3 / request / 429                                       |
-| T-14 | Integration | Negative | `POST /api/generate` returns 503 on Claude failure                  | MSW returns 500 for Claude / request / 503                          |
-| T-15 | Integration | Edge     | Stream interrupted mid-way                                          | MSW drops connection / request / SSE `{type:"error"}` emitted       |
-| T-16 | E2E         | Positive | Full topic → guide flow for registered user                         | Login + submit topic / complete / redirected to /guide/slug         |
-| T-17 | E2E         | Positive | URL input mode fetches and generates guide                          | Login + submit URL / guide rendered / content matches URL           |
-| T-18 | E2E         | Positive | Study mode selector changes visible in output                       | Login + select "Exam-prep" / generate / guide has quiz sections     |
-| T-19 | E2E         | Edge     | Very large pasted text (50k chars)                                  | Login + paste 50k chars / generate / completes successfully         |
-| T-20 | Component   | Positive | PromptBox renders all three input mode tabs                         | Mount / render / three tab buttons visible                          |
-| T-21 | Component   | Positive | StreamingProgress shows correct step sequence                       | Mount with `step="writing"` / render / steps 1+2 complete, 3 active |
+| #    | Type        | Category | Description                                                         | Given / When / Then                                                                                                      |
+| ---- | ----------- | -------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| T-01 | Unit        | Positive | `GenerationOrchestrator` calls steps in correct order               | Mock all deps / `orchestrate()` / steps called in sequence                                                               |
+| T-02 | Unit        | Positive | `OverviewStrategy.planSections` returns correct section schema      | Mock Claude / call / returns structured sections                                                                         |
+| T-03 | Unit        | Positive | `DeepDiveStrategy.planSections` returns more sections than Overview | Mock Claude / call / section count > Overview                                                                            |
+| T-04 | Unit        | Positive | `ExamPrepStrategy.buildQuizzes` returns quiz items                  | Mock Claude / call / array of quiz objects returned                                                                      |
+| T-05 | Unit        | Positive | `ELI5Strategy` simplifies language in prompt                        | Mock Claude / call / prompt contains "explain like I'm 5"                                                                |
+| T-06 | Unit        | Positive | `GuideBuilder.build` assembles valid MDX string                     | Valid sections input / build / MDX parses without error                                                                  |
+| T-07 | Unit        | Negative | Input validation rejects text > 50,000 chars                        | 50001-char string / Zod parse / ZodError                                                                                 |
+| T-08 | Unit        | Negative | Input validation rejects empty inputValue                           | Empty string / Zod parse / ZodError                                                                                      |
+| T-09 | Unit        | Edge     | Slug generation produces unique URL-safe slugs                      | Same title x2 / `generateSlug()` / different cuid suffixes                                                               |
+| T-10 | Integration | Positive | `POST /api/generate` streams tokens for topic input                 | MSW mocks Claude / valid TOPIC request / SSE stream received                                                             |
+| T-11 | Integration | Positive | Registered user guide saved to DB after stream                      | Authenticated session + mock Claude / complete / guide row in DB                                                         |
+| T-12 | Integration | Negative | Guest guide stored with watermark, not linked to any user account   | No session + mock Claude / complete / Guide row present with `userId=null` and `isWatermark=true`                        |
+| T-13 | Integration | Negative | `POST /api/generate` returns 429 at quota                           | IP at count=3 / request / 429                                                                                            |
+| T-14 | Integration | Negative | `POST /api/generate` returns 503 on Claude failure                  | MSW returns 500 for Claude / request / 503                                                                               |
+| T-15 | Integration | Edge     | Stream interrupted mid-way                                          | MSW drops connection / request / SSE `{type:"error"}` emitted                                                            |
+| T-16 | E2E         | Positive | Full topic → guide flow for registered user                         | Login + submit topic / complete / redirected to /guide/slug                                                              |
+| T-17 | E2E         | Positive | URL input mode fetches and generates guide                          | Login + submit URL / guide rendered / content matches URL                                                                |
+| T-18 | E2E         | Positive | Study mode selector changes visible in output                       | Login + select "Exam-prep" / generate / guide has quiz sections                                                          |
+| T-19 | E2E         | Edge     | Very large pasted text (50k chars)                                  | Login + paste 50k chars / generate / completes successfully                                                              |
+| T-20 | Component   | Positive | PromptBox renders all three input mode tabs                         | Mount / render / three tab buttons visible                                                                               |
+| T-21 | Component   | Positive | StreamingProgress shows correct step sequence                       | Mount with `step="writing"` / render / steps 1+2 complete, 3 active                                                      |
+| T-22 | Integration | Edge     | Non-English / Unicode / RTL text input processed without error      | Submit Arabic or Chinese topic string / orchestrate / guide generated; no encoding errors                                |
+| T-23 | Integration | Edge     | Two concurrent guest generation requests from same IP both proceed  | Two simultaneous POST /api/generate requests / both stream / no race condition; quota counted correctly                  |
+| T-24 | Integration | Edge     | Session expires mid-generation                                      | Auth session invalidated while stream is in flight / stream completes / guide saved; client receives done event or error |
+| T-25 | Integration | Edge     | MCP tool failure (Tavily returns 500) does not abort generation     | MSW returns 500 for Tavily / orchestrate / generation continues without search enrichment; user not shown raw error      |
+| T-26 | Integration | Edge     | 3rd guest request (exactly at quota limit) still succeeds           | Guest IP at count=2 / POST /api/generate / 200 stream; count becomes 3; 4th request returns 429                          |
 
 ---
 
@@ -213,7 +218,9 @@ Each step emits a progress SSE event before executing.
 - [ ] Claude API failure returns 503 gracefully.
 - [ ] URL + YouTube inputs work end-to-end (requires Spec 05 Sprint 05-A).
 - [ ] All T-01 through T-21 tests passing.
-- [ ] Coverage ≥ 90% on `src/lib/generation/**`.
-- [ ] `pnpm build` and CI green.
+- [ ] Coverage ≥ 90% on `src/lib/generation/**`; overall ≥ 85% lines / ≥ 80% branches.
+- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass locally and in CI.
+- [ ] Manual smoke test of the topic → guide happy path in Docker Compose succeeds.
+- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
 - [ ] `docs/architecture.md` updated with Strategy, Facade, Builder, Template Method entries.
 - [ ] PR squash-merged to `main`.
