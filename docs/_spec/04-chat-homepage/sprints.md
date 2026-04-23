@@ -48,7 +48,7 @@
 
 ## Sprint 04-B — Generation API route + streaming UI
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `POST /api/generate` SSE endpoint, homepage UI with prompt box and streaming progress.
 
 **Files touched:**
