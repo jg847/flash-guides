@@ -6,7 +6,7 @@
 
 ## Sprint 05-A — Core infrastructure: types, factory, retry decorator, Web Fetch
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `IMCPClient` interface, `MCPClientFactory`, `RetryDecorator`, typed error classes, `WebFetchAdapter`.
 
 **Files touched:**
