@@ -17,7 +17,7 @@ export default defineConfig({
     server: {
       deps: {
         // Inline next-auth and next so Vitest can transform ESM imports correctly
-        inline: ['next-auth', 'next', '@auth/prisma-adapter'],
+        inline: ['next-auth', 'next', '@auth/prisma-adapter', '@fal-ai/client', '@tavily/core'],
       },
     },
 
