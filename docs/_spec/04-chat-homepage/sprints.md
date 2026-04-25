@@ -1,6 +1,6 @@
 # Sprints — Spec 04: Chat Homepage & Generation Orchestrator
 
-> **Status:** 🔜 Not started — begins after Spec 03 complete; Spec 05 Sprint 05-A must finish before Sprint 04-C
+> **Status:** 🚧 In progress — Sprint 04-A and Sprint 04-B complete; Sprint 04-C ready to start
 
 ---
 
@@ -80,7 +80,7 @@
 
 ## Sprint 04-C — URL & YouTube input modes
 
-**Status:** 🔜 Not started — requires Spec 05 Sprint 05-A  
+**Status:** 🔜 Not started  
 **Scope:** Wire URL input to Web Fetch MCP; YouTube URL detection to Transcript MCP.
 
 **Files touched:**
@@ -104,5 +104,5 @@
 - `tests/e2e/generation/topic-flow.spec.ts`
 - `tests/e2e/generation/url-flow.spec.ts`
 
-**Entry criteria:** Sprint 04-B complete + Spec 05 Sprint 05-A complete.  
+**Entry criteria:** Sprint 04-B complete.  
 **Exit criteria:** All three input modes work E2E; all T-01 through T-26 pass; Definition of Done checklist satisfied.

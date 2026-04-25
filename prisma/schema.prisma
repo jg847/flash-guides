@@ -19,9 +19,11 @@ model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
+  pendingEmail  String?
   emailVerified DateTime?
   image         String?
   password      String?   // hashed — null for OAuth-only accounts
+  sessionVersion Int      @default(0)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -88,9 +90,10 @@ model Guide {
   inputValue  String      // original prompt / URL / pasted text
   content     String      // MDX string
   isPublic    Boolean     @default(false)
+  isFavorite  Boolean     @default(false)
   isWatermark Boolean     @default(false) // guest guides
-  shareToken  String?     @unique
   folderId    String?
+  shareLink   ShareLink?
   tags        GuideTag[]
   notes       Note[]
   createdAt   DateTime    @default(now())
@@ -100,6 +103,19 @@ model Guide {
   folder Folder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
 
   @@map("guides")
+}
+
+model ShareLink {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  guideId    String   @unique
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime?
+  clickCount Int      @default(0)
+
+  guide Guide @relation(fields: [guideId], references: [id], onDelete: Cascade)
+
+  @@map("share_links")
 }
 
 model Tag {

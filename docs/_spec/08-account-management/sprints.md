@@ -1,12 +1,12 @@
 # Sprints — Spec 08: Account Management
 
-> **Status:** 🔜 Not started — begins after Spec 02 is complete
+> **Status:** ✅ Complete — Sprints 08-A, 08-B, and 08-C shipped
 
 ---
 
 ## Sprint 08-A — Profile & password APIs + account page shell
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Profile update, avatar upload (MinIO), password change, account page UI.
 
 **Files touched:**
@@ -41,7 +41,7 @@
 
 ## Sprint 08-B — Email change, OAuth disconnect
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Email change with re-verification (`pendingEmail`), OAuth provider disconnect.
 
 **Files touched:**
@@ -72,7 +72,7 @@
 
 ## Sprint 08-C — Data export, account deletion, E2E
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Data export (zip of Markdown + JSON), account deletion, E2E tests.
 
 **Files touched:**

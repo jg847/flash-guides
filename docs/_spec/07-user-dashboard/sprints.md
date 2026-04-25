@@ -1,12 +1,12 @@
 # Sprints — Spec 07: User Dashboard
 
-> **Status:** 🔜 Not started — begins after Spec 04 and Spec 06 are complete
+> **Status:** ✅ Complete — Sprints 07-A, 07-B, and 07-C implemented
 
 ---
 
 ## Sprint 07-A — Guide repository + FTS5 migration + API
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `GuideRepository`, FTS5 virtual table + triggers, `GET /api/guides`, `DELETE /api/guides`.
 
 **Files touched:**
@@ -36,7 +36,7 @@
 
 ## Sprint 07-B — Folder + tag APIs
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Folder CRUD, tag management API, `FolderRepository`.
 
 **Files touched:**
@@ -59,7 +59,7 @@
 
 ## Sprint 07-C — Dashboard UI + E2E tests
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Dashboard page, guide card, grid/list toggle, search input, folder sidebar, usage summary.
 
 **Files touched:**

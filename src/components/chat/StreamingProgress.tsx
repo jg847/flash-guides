@@ -1,6 +1,6 @@
 'use client'
 
-type Step = 'planning' | 'writing' | 'done'
+type Step = 'fetching' | 'planning' | 'writing' | 'done'
 
 interface StreamingProgressProps {
   step: Step | null
@@ -8,6 +8,7 @@ interface StreamingProgressProps {
 }
 
 const STEPS: { key: Step; label: string }[] = [
+  { key: 'fetching', label: 'Fetching' },
   { key: 'planning', label: 'Planning' },
   { key: 'writing', label: 'Writing' },
   { key: 'done', label: 'Done' },

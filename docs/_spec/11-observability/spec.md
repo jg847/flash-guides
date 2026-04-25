@@ -1,7 +1,7 @@
 # Spec 11 — Observability, Security Hardening & Rate Limiting
 
 > **Phase:** Cross-cutting — applies to every phase  
-> **Status:** 🔜 Not started — can be layered onto any phase; hardening targets are identified per spec
+> **Status:** 🚧 In progress — request IDs, structured logging, security headers, CSRF checks, GuestQuota-backed guest rate limiting, input sanitization, and shared API error responses are implemented; app-level error boundaries and Sentry wiring remain
 
 ---
 
@@ -41,14 +41,14 @@ This spec defines the cross-cutting concerns that must be in place before any fe
 | OB-03 | Log lines are JSON in production (`NODE_ENV=production`), pretty in development                                                         |
 | OB-04 | Log level is configurable via `LOG_LEVEL` env var (default: `info`)                                                                     |
 | OB-05 | Guest guide generation endpoints enforce 3 requests/day per IP; returns HTTP 429 with `Retry-After` header                              |
-| OB-06 | Rate-limit state is stored in SQLite (`RateLimit` model); no Redis dependency                                                           |
+| OB-06 | Rate-limit state is stored in SQLite; no Redis dependency                                                                               |
 | OB-07 | All text inputs from users are stripped of HTML tags before persisting or passing to the AI model                                       |
 | OB-08 | `Content-Security-Policy` header is set to a restrictive policy on all pages                                                            |
 | OB-09 | `Strict-Transport-Security` header set when `NODE_ENV=production`                                                                       |
 | OB-10 | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` appear on every response |
 | OB-11 | Session cookies use `SameSite=Lax; HttpOnly; Secure` (Auth.js default; confirmed active)                                                |
 | OB-12 | CSRF: all state-changing API routes validate that `Origin` or `Referer` header matches the app's own domain                             |
-| OB-13 | Unhandled errors are captured by a global error handler; payload includes `requestId`, `message`, `code`                                |
+| OB-13 | API error responses include `requestId`, `message`, and `code`; unhandled app-level error capture remains to be finished                |
 | OB-14 | PII (email, password hashes) is NEVER written to logs                                                                                   |
 | OB-15 | `SENTRY_DSN` env var wires errors to Sentry if set; no-op if absent                                                                     |
 
@@ -64,41 +64,33 @@ This spec defines the cross-cutting concerns that must be in place before any fe
 
 ## 5. Data Model
 
-New model in `prisma/schema.prisma` for rate limiting:
+Current implementation uses the existing SQLite-backed `GuestQuota` table as the guest rate-limit store and adapts it through `src/lib/rate-limit/*`.
 
-```prisma
-model RateLimit {
-  id        String   @id @default(cuid())
-  key       String   @unique       // e.g. "guest:generate:<ip>"
-  count     Int      @default(0)
-  windowEnd DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-```
-
-No other model changes.
+- No Redis dependency.
+- No additional Prisma model was required for the current rollout.
+- A dedicated `RateLimit` model remains optional future cleanup, not a prerequisite for the shipped behavior.
 
 ---
 
 ## 6. API Contracts
 
-### Middleware — `src/middleware.ts`
+### Request pipeline — `src/proxy.ts` + route handlers
 
-All routes run the following pipeline in order:
+Cross-cutting behavior currently runs through the Next.js 16 proxy layer plus a small number of route-level helpers:
 
-1. `requestIdMiddleware` — attach UUID v4 to request; log `{event: 'request.start', ...}`
-2. `securityHeadersMiddleware` — attach all security headers
-3. `rateLimitMiddleware` (guest routes only) — check `RateLimit` row for IP
-4. Passthrough to route handlers
+1. `src/proxy.ts` generates or forwards `x-request-id` for proxied requests.
+2. `src/proxy.ts` applies shared security headers to proxied traffic.
+3. `src/proxy.ts` rejects mismatched-origin mutating `/api/**` requests, except the intentionally excluded test-only routes and Auth.js surfaces that validate origin in-route.
+4. Route handlers such as `/api/health` and the shared API error helper stamp `x-request-id` and security headers when they are outside the proxy matcher or need explicit JSON error shaping.
+5. Guest generation rate limiting is enforced at the `/api/generate` route boundary through `src/lib/rate-limit/middleware.ts` before the SSE stream opens.
 
-### `RateLimitError` (thrown by middleware):
+### Rate-limit error response:
 
 ```ts
 { status: 429, code: 'RATE_LIMIT_EXCEEDED', retryAfter: number /* seconds */ }
 ```
 
-### Error response shape (from global error handler):
+### Error response shape (from shared API error handler):
 
 ```json
 {
@@ -111,18 +103,19 @@ All routes run the following pipeline in order:
 ```
 
 Raw `message` is replaced with "An unexpected error occurred" in production for unhandled errors.
+Handled route errors preserve their explicit user-facing messages and include the same `requestId` in both the JSON body and `x-request-id` response header.
 
 ---
 
 ## 7. Dependencies
 
-| Dependency         | Reason                                            |
-| ------------------ | ------------------------------------------------- |
-| `pino`             | Structured logging (already in `package.json`)    |
-| `pino-pretty`      | Dev-mode log formatter (already in devDeps)       |
-| `@sentry/nextjs`   | Error tracking (installed if `SENTRY_DSN` is set) |
-| `uuid` or `crypto` | `randomUUID()` from Node 19+ built-in             |
-| Prisma             | `RateLimit` model for SQLite-backed rate limiting |
+| Dependency         | Reason                                                    |
+| ------------------ | --------------------------------------------------------- |
+| `pino`             | Structured logging (already in `package.json`)            |
+| `pino-pretty`      | Dev-mode log formatter (already in devDeps)               |
+| `@sentry/nextjs`   | Error tracking (installed if `SENTRY_DSN` is set)         |
+| `uuid` or `crypto` | `randomUUID()` from Node 19+ built-in                     |
+| Prisma             | SQLite-backed guest quota storage and rate-limit adapters |
 
 ---
 

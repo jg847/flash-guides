@@ -1,7 +1,7 @@
 # Spec 10 — CLI Source Export
 
 > **Phase:** 4 — Developer Tooling  
-> **Status:** 🔜 Not started — independent; can be implemented any time after Phase 0
+> **Status:** ✅ Implemented — `export:source` is complete and locally validated; repository merge remains an external release step
 
 ---
 
@@ -130,14 +130,14 @@ No new npm packages should be required.
 
 ## 10. Definition of Done
 
-- [ ] All CLI-01 through CLI-16 criteria verified manually.
-- [ ] All T-01 through T-13 tests pass.
-- [ ] `pnpm export:source --stdout | head -20` shows correct header and first file.
-- [ ] `.env` and `prisma.config.ts` are not present in output (verified by grep in test).
-- [ ] `pnpm export:source --stdout | grep -i "ANTHROPIC_API_KEY"` returns nothing.
-- [ ] No TypeScript errors (`pnpm typecheck`).
-- [ ] `pnpm lint` passes.
-- [ ] Script is listed in `package.json` under `scripts.export:source`.
-- [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
-- [ ] `docs/architecture.md` updated with the Command pattern entry for the CLI tool.
+- [x] All CLI-01 through CLI-16 criteria verified manually.
+- [x] All T-01 through T-13 tests pass.
+- [x] `pnpm export:source --stdout | head -20` shows correct header and first file.
+- [x] `.env` and `prisma.config.ts` are not present in output (verified by grep in test).
+- [x] `pnpm export:source --stdout | grep -i "ANTHROPIC_API_KEY"` returns nothing.
+- [x] No TypeScript errors (`pnpm typecheck`).
+- [x] `pnpm lint` passes.
+- [x] Script is listed in `package.json` under `scripts.export:source`.
+- [x] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
+- [x] `docs/architecture.md` updated with the Command pattern entry for the CLI tool.
 - [ ] PR squash-merged to `main`.

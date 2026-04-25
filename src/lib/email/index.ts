@@ -52,3 +52,21 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
 <p>This link expires in 1 hour. If you did not request this, ignore this email.</p>`,
   })
 }
+
+/**
+ * Send an email change verification link.
+ */
+export async function sendEmailChangeVerification(email: string, token: string): Promise<void> {
+  const url = `${APP_URL}/api/account/verify-email-change?token=${token}`
+  const transport = createTransport()
+
+  await transport.sendMail({
+    from: FROM,
+    to: email,
+    subject: 'Confirm your new FlashGuides email',
+    text: `Click the link to confirm your new email address:\n\n${url}\n\nThis link expires in 24 hours.`,
+    html: `<p>Click the link below to confirm your new email address:</p>
+<p><a href="${url}">${url}</a></p>
+<p>This link expires in 24 hours.</p>`,
+  })
+}

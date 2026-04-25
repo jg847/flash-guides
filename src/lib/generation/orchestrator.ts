@@ -3,6 +3,7 @@ import { claudeClient } from '@/lib/ai/claude'
 import { StudyModeStrategyFactory } from '@/lib/study-modes/factory'
 import { GuideBuilder } from './builder'
 import { generateSlug } from './slug'
+import { normalizeInput } from './input-normalizer'
 import { checkAndIncrementQuota, extractIp } from '@/lib/guest/quota'
 import type {
   GenerationRequest,
@@ -16,6 +17,7 @@ export interface OrchestratorContext {
   request: GenerationRequest
   session: Session | null
   req: Request
+  skipGuestQuotaCheck?: boolean
 }
 
 /**
@@ -43,7 +45,7 @@ export class GenerationOrchestrator {
     const isRegistered = Boolean(session?.user?.id)
 
     // ── Step 1: Quota check (guests only) ───────────────────────────────────
-    if (!isRegistered) {
+    if (!isRegistered && !ctx.skipGuestQuotaCheck) {
       const ip = extractIp(req)
       const quota = await checkAndIncrementQuota(ip)
       if (!quota.allowed) {
@@ -60,12 +62,19 @@ export class GenerationOrchestrator {
     }
 
     // ── Step 2: Normalise input ──────────────────────────────────────────────
-    // URL/YouTube normalisation handled by Sprint 04-C input-normalizer.
-    // For 04-A/04-B, TEXT and TOPIC inputs are passed through directly.
-    const normalizedInput: NormalizedInput = {
-      type: request.inputType,
-      text: request.inputValue,
-      originalValue: request.inputValue,
+    let normalizedInput: NormalizedInput
+    try {
+      if (request.inputType === 'URL') {
+        yield { type: 'step', step: 'fetching' }
+        await import('@/lib/container')
+      }
+      normalizedInput = await normalizeInput(request)
+    } catch {
+      yield {
+        type: 'error',
+        message: 'Unable to fetch source content. Check the URL or paste the text instead.',
+      }
+      return
     }
 
     // ── Step 3: Build strategy ───────────────────────────────────────────────

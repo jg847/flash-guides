@@ -52,21 +52,76 @@ export const authConfig = {
           throw new Error('EmailNotVerified')
         }
 
-        return { id: user.id, email: user.email, name: user.name, image: user.image }
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+          sessionVersion: user.sessionVersion,
+        }
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.id) {
-        token['id'] = user.id
+      const userId =
+        typeof user?.id === 'string'
+          ? user.id
+          : typeof token['id'] === 'string'
+            ? token['id']
+            : null
+
+      if (!userId) {
+        return token
       }
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+          sessionVersion: true,
+        },
+      })
+
+      if (!currentUser) {
+        return {}
+      }
+
+      if (user?.id) {
+        token['id'] = currentUser.id
+        token['sub'] = currentUser.id
+        token['email'] = currentUser.email
+        token['name'] = currentUser.name ?? undefined
+        token['picture'] = currentUser.image ?? undefined
+        token['sessionVersion'] = currentUser.sessionVersion
+        return token
+      }
+
+      if (token['sessionVersion'] !== currentUser.sessionVersion) {
+        return {}
+      }
+
       return token
     },
     async session({ session, token }) {
       const id = token['id']
       if (typeof id === 'string') {
         session.user.id = id
+      }
+
+      if (typeof token['name'] === 'string') {
+        session.user.name = token['name']
+      }
+
+      if (typeof token['email'] === 'string') {
+        session.user.email = token['email']
+      }
+
+      if (typeof token['picture'] === 'string') {
+        session.user.image = token['picture']
       }
       return session
     },

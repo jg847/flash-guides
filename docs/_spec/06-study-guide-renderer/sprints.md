@@ -1,12 +1,12 @@
 # Sprints — Spec 06: Study Guide Renderer
 
-> **Status:** 🔜 Not started — begins after Spec 04 (generation produces MDX content)
+> **Status:** ✅ Complete — Sprints 06-A, 06-B, and 06-C implemented
 
 ---
 
 ## Sprint 06-A — MDX rendering + guide page shell
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Guide page route, MDX rendering via `next-mdx-remote`, hero section, TOC generation, collapsible sections.
 
 **Files touched:**
@@ -29,9 +29,11 @@
 
 **Tests added:**
 
+- `tests/unit/components/guide/GuideRenderer.test.tsx`
 - `tests/unit/components/guide/GuideTOC.test.tsx`
 - `tests/unit/components/guide/CollapsibleSection.test.tsx`
 - `tests/unit/components/guide/GuideHero.test.tsx`
+- `tests/unit/pages/guide-page.test.tsx`
 
 **Entry criteria:** Spec 04 Sprint 04-B complete (MDX content being generated).  
 **Exit criteria:** A guide page at `/guide/[slug]` renders MDX content with working TOC and collapsible sections.
@@ -40,7 +42,7 @@
 
 ## Sprint 06-B — Flashcards, inline quizzes, reading progress
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `FlashcardDeck` component, `InlineQuiz` component, `ReadingProgressBar`.
 
 **Files touched:**
@@ -63,6 +65,7 @@
 - `tests/unit/components/guide/FlashcardDeck.test.tsx`
 - `tests/unit/components/guide/InlineQuiz.test.tsx`
 - `tests/unit/components/guide/ReadingProgressBar.test.tsx`
+- `tests/unit/lib/generation/builder.test.ts`
 
 **Entry criteria:** Sprint 06-A complete.  
 **Exit criteria:** Flashcards flip, quiz gives feedback, progress bar updates on scroll.
@@ -71,7 +74,7 @@
 
 ## Sprint 06-C — Highlight-to-note, follow-up chat, dark mode, E2E
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Highlight-to-note system, follow-up chat, dark/light mode toggle, full E2E tests.
 
 **Files touched:**

@@ -18,7 +18,9 @@ vi.mock('@/components/chat/StudyModeSelector', () => ({
 }))
 
 vi.mock('@/components/chat/StreamingProgress', () => ({
-  default: () => <div data-testid="streaming-progress" />,
+  default: ({ step }: { step: string | null }) => (
+    <div data-testid="streaming-progress" data-step={step ?? ''} />
+  ),
 }))
 
 vi.mock('@/components/guest/QuotaExhaustedModal', () => ({
@@ -165,5 +167,33 @@ describe('PromptBox', () => {
     fireEvent.click(screen.getByTestId('generate-button'))
 
     await waitFor(() => expect(screen.getByTestId('streaming-progress')).toBeDefined())
+  })
+
+  it('shows fetching step for URL input while source content is loading', async () => {
+    const hangingBody = new ReadableStream({
+      start() {
+        // keep request in flight
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(hangingBody, {
+          status: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        }),
+      ),
+    )
+
+    render(<PromptBox />)
+    fireEvent.click(screen.getByTestId('input-tab-url'))
+    fireEvent.change(screen.getByTestId('prompt-input'), {
+      target: { value: 'https://example.com/article' },
+    })
+    fireEvent.click(screen.getByTestId('generate-button'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('streaming-progress').getAttribute('data-step')).toBe('fetching'),
+    )
   })
 })

@@ -12,13 +12,19 @@ vi.mock('@/lib/auth', () => ({
   auth: vi.fn(),
 }))
 
+vi.mock('@/lib/rate-limit', () => ({
+  checkGuestGenerationRateLimit: vi.fn(),
+}))
+
 import { auth } from '@/lib/auth'
 import { generationOrchestrator } from '@/lib/generation/orchestrator'
+import { checkGuestGenerationRateLimit } from '@/lib/rate-limit'
 import { POST } from '@/app/api/generate/route'
 import type { SSEEvent } from '@/types/generation'
 
 const mockAuth = auth as ReturnType<typeof vi.fn>
 const mockOrchestrate = generationOrchestrator.orchestrate as ReturnType<typeof vi.fn>
+const mockCheckGuestGenerationRateLimit = checkGuestGenerationRateLimit as ReturnType<typeof vi.fn>
 
 function makeRequest(body: unknown, headers?: Record<string, string>) {
   return new Request('http://localhost:3000/api/generate', {
@@ -52,6 +58,14 @@ async function readSSEResponse(res: Response): Promise<SSEEvent[]> {
 beforeEach(() => {
   vi.clearAllMocks()
   mockAuth.mockResolvedValue(null)
+  mockCheckGuestGenerationRateLimit.mockResolvedValue({
+    allowed: true,
+    used: 1,
+    limit: 3,
+    remaining: 2,
+    resetsAt: new Date('2026-04-25T00:00:00.000Z'),
+    retryAfter: 3600,
+  })
 })
 
 const VALID_BODY = {
@@ -61,9 +75,18 @@ const VALID_BODY = {
 } as const
 
 describe('POST /api/generate', () => {
-  it('returns 422 for missing fields', async () => {
+  it('returns structured requestId-aware validation errors for missing fields', async () => {
     const res = await POST(makeRequest({ inputType: 'TOPIC' }))
+
     expect(res.status).toBe(422)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string; issues: unknown[] }
+    }
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+    expect(body.error.message).toBe('Validation failed')
+    expect(body.error.requestId).toBeTruthy()
+    expect(Array.isArray(body.error.issues)).toBe(true)
+    expect(res.headers.get('x-request-id')).toBe(body.error.requestId)
   })
 
   it('returns 422 for invalid inputType', async () => {
@@ -76,14 +99,22 @@ describe('POST /api/generate', () => {
     expect(res.status).toBe(422)
   })
 
-  it('returns 400 for invalid JSON', async () => {
+  it('returns structured requestId-aware invalid json errors', async () => {
     const req = new Request('http://localhost:3000/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 'not-json',
     })
     const res = await POST(req)
+
     expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('INVALID_JSON')
+    expect(body.error.message).toBe('Invalid JSON')
+    expect(body.error.requestId).toBeTruthy()
+    expect(res.headers.get('x-request-id')).toBe(body.error.requestId)
   })
 
   it('streams SSE events for a valid request', async () => {
@@ -122,6 +153,40 @@ describe('POST /api/generate', () => {
     expect(received[0]).toEqual(quotaError)
   })
 
+  it('returns 429 with Retry-After when guest rate limit is exceeded before streaming starts', async () => {
+    mockCheckGuestGenerationRateLimit.mockResolvedValueOnce({
+      allowed: false,
+      used: 3,
+      limit: 3,
+      remaining: 0,
+      resetsAt: new Date('2026-04-25T00:00:00.000Z'),
+      retryAfter: 1800,
+    })
+
+    const res = await POST(makeRequest(VALID_BODY, { origin: 'http://localhost:3000' }))
+
+    expect(res.status).toBe(429)
+    expect(res.headers.get('Retry-After')).toBe('1800')
+    const body = (await res.json()) as {
+      error: {
+        code: string
+        message: string
+        requestId: string
+        retryAfter: number
+        resetsAt: string
+        signupUrl: string
+      }
+    }
+    expect(body.error.code).toBe('RATE_LIMIT_EXCEEDED')
+    expect(body.error.message).toBe("You've created 3 guides today. Sign up for unlimited access!")
+    expect(body.error.requestId).toBeTruthy()
+    expect(body.error.retryAfter).toBe(1800)
+    expect(body.error.resetsAt).toBe('2026-04-25T00:00:00.000Z')
+    expect(body.error.signupUrl).toBe('/register')
+    expect(res.headers.get('x-request-id')).toBe(body.error.requestId)
+    expect(mockOrchestrate).not.toHaveBeenCalled()
+  })
+
   it('encodes AI service error as SSE event when orchestrator throws', async () => {
     mockOrchestrate.mockImplementation(async function* () {
       throw new Error('Claude timeout')
@@ -144,5 +209,32 @@ describe('POST /api/generate', () => {
     await POST(makeRequest(VALID_BODY))
 
     expect(mockOrchestrate).toHaveBeenCalledWith(expect.objectContaining({ session: fakeSession }))
+  })
+
+  it('passes skipGuestQuotaCheck to the orchestrator after route-level rate limiting', async () => {
+    mockOrchestrate.mockReturnValue(makeEventGen([{ type: 'done', guideSlug: 'slug-1' }]))
+
+    await POST(makeRequest(VALID_BODY))
+
+    expect(mockOrchestrate).toHaveBeenCalledWith(
+      expect.objectContaining({ skipGuestQuotaCheck: true }),
+    )
+  })
+
+  it('sanitizes the generation input before passing it to the orchestrator', async () => {
+    mockOrchestrate.mockReturnValue(makeEventGen([{ type: 'done', guideSlug: 'slug-1' }]))
+
+    await POST(
+      makeRequest({
+        ...VALID_BODY,
+        inputValue: '  <script>alert(1)</script>The French Revolution\u0000  ',
+      }),
+    )
+
+    expect(mockOrchestrate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.objectContaining({ inputValue: 'alert(1)The French Revolution' }),
+      }),
+    )
   })
 })

@@ -37,8 +37,11 @@ export function LoginForm() {
         return
       }
 
-      // Successful sign-in — redirect manually to preserve callbackUrl
-      window.location.href = result.url ?? callbackUrl
+      // Keep redirects on the current origin so session cookies survive host mismatches.
+      const redirectUrl = result.url
+        ? new URL(result.url, window.location.origin)
+        : new URL(callbackUrl, window.location.origin)
+      window.location.href = `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`
     } catch {
       setError('Network error. Please try again.')
     } finally {

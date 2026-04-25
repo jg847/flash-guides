@@ -1,12 +1,12 @@
 # Sprints — Spec 09: Sharing & Export
 
-> **Status:** 🔜 Not started — begins after Spec 06 and Spec 07 are complete
+> **Status:** ✅ Complete — sharing, fork, export, and authenticated shared-page flows implemented and validated
 
 ---
 
 ## Sprint 09-A — Share link creation, revocation, read-only view
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `ShareLink` model + migration, share APIs, `/share/[token]` read-only page.
 
 **Files touched:**
@@ -39,7 +39,7 @@
 
 ## Sprint 09-B — Fork action
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Fork API, fork button on share page, dashboard integration.
 
 **Files touched:**
@@ -54,6 +54,7 @@
 - Run inside a `prisma.$transaction` to keep atomicity.
 - Title prefix: `"[Fork] ${original.title}"` (truncated to 255 chars).
 - Return redirect to `/dashboard/guides/[newId]` with 201.
+- The shared guide page is forced dynamic so authenticated visitors see the live fork CTA instead of a cached guest render.
 
 **Tests added:**
 
@@ -67,7 +68,7 @@
 
 ## Sprint 09-C — Export (Markdown, HTML, PDF) + E2E
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** Three export endpoints, download UX, E2E tests.
 
 **Files touched:**
@@ -93,6 +94,11 @@
 - `tests/unit/lib/export/pdf.test.ts`
 - `tests/integration/api/guides/export.test.ts`
 - `tests/e2e/sharing/sharing.spec.ts`
+
+**Implementation notes:**
+
+- Owned guide pages expose an `Export` menu with direct downloads for Markdown, HTML, and PDF.
+- Share/export/fork browser coverage validates the owner flow end-to-end, including revocation rendering the unavailable page.
 
 **Entry criteria:** Sprint 09-B complete.  
 **Exit criteria:** All T-01 through T-15 pass; Definition of Done checklist satisfied.

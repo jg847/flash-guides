@@ -1,27 +1,40 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { consumeVerificationToken } from '@/lib/auth/tokens'
+import { createApiErrorResponse, handleApiError } from '@/lib/errors/handler'
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const token = searchParams.get('token')
+  try {
+    const { searchParams } = new URL(req.url)
+    const token = searchParams.get('token')
 
-  if (!token) {
-    return NextResponse.json({ error: 'Missing token' }, { status: 400 })
+    if (!token) {
+      return createApiErrorResponse(req, {
+        status: 400,
+        code: 'MISSING_TOKEN',
+        message: 'Missing token',
+      })
+    }
+
+    const identifier = await consumeVerificationToken(token)
+
+    if (!identifier) {
+      return createApiErrorResponse(req, {
+        status: 410,
+        code: 'TOKEN_INVALID',
+        message: 'Token expired or invalid',
+      })
+    }
+
+    await prisma.user.update({
+      where: { email: identifier },
+      data: { emailVerified: new Date() },
+    })
+
+    return NextResponse.redirect(
+      new URL('/dashboard?verified=1', process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000'),
+    )
+  } catch (error) {
+    return handleApiError(error, req)
   }
-
-  const identifier = await consumeVerificationToken(token)
-
-  if (!identifier) {
-    return NextResponse.json({ error: 'Token expired or invalid' }, { status: 410 })
-  }
-
-  await prisma.user.update({
-    where: { email: identifier },
-    data: { emailVerified: new Date() },
-  })
-
-  return NextResponse.redirect(
-    new URL('/dashboard?verified=1', process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000'),
-  )
 }

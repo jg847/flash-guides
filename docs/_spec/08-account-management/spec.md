@@ -1,6 +1,6 @@
 # Spec 08 — Account Management
 
-> **Status:** 📝 Spec ready — not yet implemented  
+> **Status:** ✅ Implemented  
 > **Sprint file:** [sprints.md](./sprints.md)
 
 ---

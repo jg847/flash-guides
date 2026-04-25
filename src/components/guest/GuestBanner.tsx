@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
+import { hasAuthenticatedUser } from '@/lib/auth/session'
 import { getQuotaStatus } from '@/lib/guest/quota'
 import { headers } from 'next/headers'
 
@@ -12,7 +13,7 @@ export default async function GuestBanner() {
   const session = await auth()
 
   // Do not show the banner to authenticated users
-  if (session?.user?.id) return null
+  if (hasAuthenticatedUser(session)) return null
 
   // Extract IP from incoming request headers (available in RSC via next/headers)
   const headersList = await headers()

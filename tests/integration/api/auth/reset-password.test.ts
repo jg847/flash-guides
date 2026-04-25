@@ -57,8 +57,12 @@ describe('POST /api/auth/reset-password', () => {
     const res = await POST(makeRequest({ token: 'expiredtoken', password: 'NewSecure1' }))
 
     expect(res.status).toBe(410)
-    const body = (await res.json()) as { error: string }
-    expect(body.error).toBe('Token expired or invalid')
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('TOKEN_INVALID')
+    expect(body.error.message).toBe('Token expired or invalid')
+    expect(body.error.requestId).toBeTruthy()
     expect(mockUpdate).not.toHaveBeenCalled()
   })
 
@@ -66,8 +70,9 @@ describe('POST /api/auth/reset-password', () => {
     const res = await POST(makeRequest({ token: 'sometoken', password: 'weak' }))
 
     expect(res.status).toBe(422)
-    const body = (await res.json()) as { fields: Record<string, string[]> }
-    expect(body.fields).toHaveProperty('password')
+    const body = (await res.json()) as { error: { code: string; fields: Record<string, string[]> } }
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+    expect(body.error.fields).toHaveProperty('password')
   })
 
   it('returns 422 when token field is missing', async () => {
@@ -84,5 +89,27 @@ describe('POST /api/auth/reset-password', () => {
       }),
     )
     expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('INVALID_JSON')
+    expect(body.error.message).toBe('Invalid JSON')
+    expect(body.error.requestId).toBeTruthy()
+  })
+
+  it('returns 403 for a mismatched origin header', async () => {
+    const res = await POST(
+      new Request('http://localhost:3000/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          origin: 'https://attacker.example',
+        },
+        body: JSON.stringify({ token: 'validtoken', password: 'NewSecure1' }),
+      }),
+    )
+
+    expect(res.status).toBe(403)
+    expect(mockUpdate).not.toHaveBeenCalled()
   })
 })

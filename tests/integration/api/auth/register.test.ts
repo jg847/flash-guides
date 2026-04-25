@@ -80,8 +80,13 @@ describe('POST /api/auth/register', () => {
     const res = await POST(makeRequest({ email: 'dupe@example.com', password: 'SecurePass1' }))
 
     expect(res.status).toBe(409)
-    const body = (await res.json()) as { error: string }
-    expect(body.error).toBe('Email already registered')
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('EMAIL_ALREADY_REGISTERED')
+    expect(body.error.message).toBe('Email already registered')
+    expect(body.error.requestId).toBeTruthy()
+    expect(res.headers.get('x-request-id')).toBe(body.error.requestId)
     expect(mockPrismaUser.create).not.toHaveBeenCalled()
   })
 
@@ -89,25 +94,29 @@ describe('POST /api/auth/register', () => {
     const res = await POST(makeRequest({ password: 'SecurePass1' }))
 
     expect(res.status).toBe(422)
-    const body = (await res.json()) as { error: string; fields: Record<string, string[]> }
-    expect(body.error).toBe('Validation failed')
-    expect(body.fields).toHaveProperty('email')
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string; fields: Record<string, string[]> }
+    }
+    expect(body.error.code).toBe('VALIDATION_ERROR')
+    expect(body.error.message).toBe('Validation failed')
+    expect(body.error.requestId).toBeTruthy()
+    expect(body.error.fields).toHaveProperty('email')
   })
 
   it('returns 422 for weak password (no uppercase)', async () => {
     const res = await POST(makeRequest({ email: 'new@example.com', password: 'nouppercase1' }))
 
     expect(res.status).toBe(422)
-    const body = (await res.json()) as { fields: Record<string, string[]> }
-    expect(body.fields).toHaveProperty('password')
+    const body = (await res.json()) as { error: { fields: Record<string, string[]> } }
+    expect(body.error.fields).toHaveProperty('password')
   })
 
   it('returns 422 for password shorter than 8 chars', async () => {
     const res = await POST(makeRequest({ email: 'new@example.com', password: 'Ab1' }))
 
     expect(res.status).toBe(422)
-    const body = (await res.json()) as { fields: Record<string, string[]> }
-    expect(body.fields?.password?.[0]).toMatch(/8 characters/)
+    const body = (await res.json()) as { error: { fields: Record<string, string[]> } }
+    expect(body.error.fields?.password?.[0]).toMatch(/8 characters/)
   })
 
   it('returns 400 for non-JSON body', async () => {
@@ -119,5 +128,27 @@ describe('POST /api/auth/register', () => {
       }),
     )
     expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('INVALID_JSON')
+    expect(body.error.message).toBe('Invalid JSON')
+    expect(body.error.requestId).toBeTruthy()
+  })
+
+  it('returns 403 for a mismatched origin header', async () => {
+    const res = await POST(
+      new Request('http://localhost:3000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          origin: 'https://attacker.example',
+        },
+        body: JSON.stringify({ email: 'new@example.com', password: 'SecurePass1' }),
+      }),
+    )
+
+    expect(res.status).toBe(403)
+    expect(mockPrismaUser.create).not.toHaveBeenCalled()
   })
 })

@@ -1,6 +1,6 @@
 # Sprints — Spec 05: MCP Tool Integrations
 
-> **Status:** 🔜 Not started — can begin in parallel with Spec 03 (no dependency on auth/guest features)
+> **Status:** ✅ Complete — Sprints 05-A, 05-B, and 05-C finished
 
 ---
 
@@ -39,7 +39,7 @@
 
 ## Sprint 05-B — Tavily Search + fal.ai Image Generation adapters
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `TavilySearchAdapter` and `FalImageGenAdapter` implementations.
 
 **Files touched:**
@@ -63,18 +63,20 @@
 - `tests/mocks/handlers/fal.ts`
 
 **Entry criteria:** Sprint 05-A complete.  
-**Exit criteria:** Both adapters pass unit tests; MSW handlers prevent live API calls in CI.
+**Exit criteria:** Both adapters pass unit tests; test coverage prevents live API calls in CI.
 
 ---
 
 ## Sprint 05-C — YouTube Transcript adapter + interface compliance tests
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `YouTubeTranscriptAdapter`, interface compliance test suite run against all four adapters.
 
 **Files touched:**
 
 - `src/lib/mcp/adapters/youtube-transcript.ts`
+- `src/lib/mcp/index.ts`
+- `src/lib/container.ts`
 - `tests/unit/lib/mcp/adapters/youtube-transcript.test.ts`
 - `tests/integration/lib/mcp/adapter-compliance.test.ts` — LSP compliance test, run against all adapters
 

@@ -41,24 +41,28 @@ Tests replace these with in-memory fakes or MSW-mocked network without touching 
 
 ## 2. Folder → Concern Mapping
 
-| Folder                 | Concern                            | SOLID principle enforced                                                      |
-| ---------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
-| `src/lib/ai/`          | Claude client + streaming          | **SRP**: one file, one external vendor                                        |
-| `src/lib/mcp/`         | MCP client factory + adapters      | **OCP + LSP**: new tool = new file, no changes to factory logic               |
-| `src/lib/auth/`        | Auth.js configuration              | **SRP**: auth config isolated from session helpers                            |
-| `src/lib/db/`          | Prisma client + repositories       | **ISP**: `IGuideReader` ≠ `IGuideWriter`; **DIP**: repos depend on interfaces |
-| `src/lib/study-modes/` | Strategy implementations           | **OCP**: new mode = new strategy, no changes to orchestrator                  |
-| `src/lib/generation/`  | Guide builder + orchestrator       | **SRP + DIP**: wires strategies and repos together                            |
-| `src/lib/security/`    | Headers, CSRF, sanitize            | **SRP**: isolated from route handlers                                         |
-| `src/lib/rate-limit/`  | Rate-limit logic                   | **SRP**: keeps quota rules out of route handlers                              |
-| `src/lib/logger/`      | Pino wrapper                       | **DIP**: callers depend on `ILogger` interface                                |
-| `src/lib/errors/`      | Error handler + Sentry hook        | **DIP**: error sinks behind interface                                         |
-| `src/lib/export/`      | Markdown / HTML / PDF builders     | **SRP**: one file per format                                                  |
-| `src/lib/sharing/`     | Share link + fork logic            | **SRP**                                                                       |
-| `src/lib/cli/`         | CLI helpers (for export-source.ts) | **SRP**                                                                       |
-| `src/lib/container.ts` | **Composition root**               | **DIP**: sole place where `new` is called on concrete classes                 |
-| `src/server/`          | Route handlers, middleware         | **SRP**: thin handlers only; business logic in `src/lib/`                     |
-| `src/components/`      | React UI components                | **ISP**: props interfaces are narrow                                          |
+| Folder                     | Concern                            | SOLID principle enforced                                                      |
+| -------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
+| `src/lib/ai/`              | Claude client + streaming          | **SRP**: one file, one external vendor                                        |
+| `src/lib/mcp/`             | MCP client factory + adapters      | **OCP + LSP**: new tool = new file, no changes to factory logic               |
+| `src/lib/auth/`            | Auth.js configuration              | **SRP**: auth config isolated from session helpers                            |
+| `src/lib/db/`              | Prisma client + repositories       | **ISP**: `IGuideReader` ≠ `IGuideWriter`; **DIP**: repos depend on interfaces |
+| `src/lib/study-modes/`     | Strategy implementations           | **OCP**: new mode = new strategy, no changes to orchestrator                  |
+| `src/lib/generation/`      | Guide builder + orchestrator       | **SRP + DIP**: wires strategies and repos together                            |
+| `src/lib/security/`        | Headers, CSRF, sanitize            | **SRP**: isolated from route handlers                                         |
+| `src/lib/rate-limit/`      | Rate-limit logic                   | **SRP**: keeps quota rules out of route handlers                              |
+| `src/lib/guides/`          | Guide content parsing              | **SRP**: markdown/MDX parsing kept out of route files and UI components       |
+| `src/lib/db/repositories/` | Persistence helpers for aggregates | **SRP**: route handlers stay thin while repositories own write operations     |
+| `src/lib/logger/`          | Pino wrapper                       | **DIP**: callers depend on `ILogger` interface                                |
+| `src/lib/errors/`          | Error handler + Sentry hook        | **DIP**: error sinks behind interface                                         |
+| `src/lib/export/`          | Markdown / HTML / PDF builders     | **SRP**: one file per format                                                  |
+| `src/lib/sharing/`         | Share link + fork logic            | **SRP**                                                                       |
+| `src/lib/cli/`             | CLI helpers (for export-source.ts) | **SRP**                                                                       |
+| `src/lib/container.ts`     | **Composition root**               | **DIP**: sole place where `new` is called on concrete classes                 |
+| `src/server/`              | Route handlers, middleware         | **SRP**: thin handlers only; business logic in `src/lib/`                     |
+| `src/components/`          | React UI components                | **ISP**: props interfaces are narrow                                          |
+
+The study-guide renderer follows the same split: route/data access in `src/app/guide/[slug]/page.tsx`, markdown parsing in `src/lib/guides/content.ts`, client-side interactivity in `src/components/guide/`, and note persistence behind `src/lib/db/repositories/notes.ts`.
 
 ---
 
@@ -239,6 +243,29 @@ orchestrator.generate(userId | null, input: GenerationInput): AsyncIterable<Stre
 ```
 
 Internally: `authCheck → quotaCheck → studyModeSelection → mcpSetup → stream → guideBuilder → persist → return`.
+
+---
+
+### Command — CLI Source Export
+
+**Location:** `scripts/export-source.ts` with helpers in `src/lib/cli/`  
+**Why:** The source-export tool packages a filesystem operation behind a single command-style entrypoint with parsed options and one `main()` execution path.
+
+```ts
+main(argv)
+  -> parseCliOptions(argv)
+  -> buildExportDocument(options)
+  -> writeOutput(output, options)
+```
+
+The command object boundary keeps CLI concerns out of library code:
+
+- `src/lib/cli/collect-files.ts` handles discovery and filtering.
+- `src/lib/cli/always-exclude.ts` owns filename and content-based secret exclusion.
+- `src/lib/cli/format-section.ts` owns presentation formatting.
+- `src/lib/cli/estimate-tokens.ts` owns prompt-size estimation.
+
+This keeps the command invoker thin while the reusable operations remain isolated and independently testable.
 
 ---
 

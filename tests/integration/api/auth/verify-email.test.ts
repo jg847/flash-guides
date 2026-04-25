@@ -36,6 +36,12 @@ describe('GET /api/auth/verify-email', () => {
   it('returns 400 when no token param is provided', async () => {
     const res = await GET(makeRequest())
     expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('MISSING_TOKEN')
+    expect(body.error.message).toBe('Missing token')
+    expect(body.error.requestId).toBeTruthy()
   })
 
   it('returns 410 when token is expired or invalid', async () => {
@@ -43,8 +49,12 @@ describe('GET /api/auth/verify-email', () => {
 
     const res = await GET(makeRequest('badtoken'))
     expect(res.status).toBe(410)
-    const body = (await res.json()) as { error: string }
-    expect(body.error).toBe('Token expired or invalid')
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('TOKEN_INVALID')
+    expect(body.error.message).toBe('Token expired or invalid')
+    expect(body.error.requestId).toBeTruthy()
   })
 
   it('marks emailVerified and redirects to dashboard on valid token', async () => {

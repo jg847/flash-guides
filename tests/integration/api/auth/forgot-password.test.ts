@@ -61,6 +61,12 @@ describe('POST /api/auth/forgot-password', () => {
   it('returns 422 for invalid email format', async () => {
     const res = await POST(makeRequest({ email: 'not-an-email' }))
     expect(res.status).toBe(422)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('INVALID_EMAIL_ADDRESS')
+    expect(body.error.message).toBe('Invalid email address')
+    expect(body.error.requestId).toBeTruthy()
   })
 
   it('returns 400 for non-JSON body', async () => {
@@ -72,5 +78,27 @@ describe('POST /api/auth/forgot-password', () => {
       }),
     )
     expect(res.status).toBe(400)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('INVALID_JSON')
+    expect(body.error.message).toBe('Invalid JSON')
+    expect(body.error.requestId).toBeTruthy()
+  })
+
+  it('returns 403 for a mismatched origin header', async () => {
+    const res = await POST(
+      new Request('http://localhost:3000/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          origin: 'https://attacker.example',
+        },
+        body: JSON.stringify({ email: 'user@example.com' }),
+      }),
+    )
+
+    expect(res.status).toBe(403)
+    expect(mockSendEmail).not.toHaveBeenCalled()
   })
 })

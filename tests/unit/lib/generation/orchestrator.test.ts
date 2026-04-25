@@ -16,9 +16,20 @@ vi.mock('@/lib/guest/quota', () => ({
   extractIp: vi.fn().mockReturnValue('1.2.3.4'),
 }))
 
+vi.mock('@/lib/generation/input-normalizer', () => ({
+  normalizeInput: vi.fn(async (request: GenerationRequest) => ({
+    type: request.inputType,
+    text: request.inputValue,
+    originalValue: request.inputValue,
+  })),
+}))
+
+vi.mock('@/lib/container', () => ({}))
+
 import { claudeClient } from '@/lib/ai/claude'
 import { prisma } from '@/lib/db/client'
 import { checkAndIncrementQuota } from '@/lib/guest/quota'
+import { normalizeInput } from '@/lib/generation/input-normalizer'
 import { GenerationOrchestrator } from '@/lib/generation/orchestrator'
 import type { GenerationRequest, SSEEvent } from '@/types/generation'
 
@@ -28,6 +39,7 @@ const mockClient = claudeClient as unknown as {
 }
 const mockCreate = (prisma.guide as unknown as { create: ReturnType<typeof vi.fn> }).create
 const mockQuota = checkAndIncrementQuota as ReturnType<typeof vi.fn>
+const mockNormalizeInput = normalizeInput as ReturnType<typeof vi.fn>
 
 const MOCK_PLAN = `TITLE: Test Guide
 ## Section One
@@ -55,6 +67,11 @@ function makeTextStream(text: string): ReadableStream<string> {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockNormalizeInput.mockImplementation(async (request: GenerationRequest) => ({
+    type: request.inputType,
+    text: request.inputValue,
+    originalValue: request.inputValue,
+  }))
   mockClient.generate.mockResolvedValue(MOCK_PLAN)
   mockClient.streamGenerate.mockResolvedValue(makeTextStream('# Test Guide\n\nContent.'))
   mockCreate.mockResolvedValue({ id: 'g1', slug: 'test-guide-abc123' })
@@ -155,5 +172,42 @@ describe('GenerationOrchestrator', () => {
     const errorEvent = events.find((e) => e.type === 'error')
     expect(errorEvent).toBeDefined()
     expect((errorEvent as { type: 'error'; message: string }).message).toContain('unavailable')
+  })
+
+  it('emits fetching before planning for URL inputs', async () => {
+    const orch = new GenerationOrchestrator()
+    const request: GenerationRequest = {
+      inputType: 'URL',
+      inputValue: 'https://example.com/article',
+      studyMode: 'OVERVIEW',
+    }
+
+    const events = await collectEvents(orch.orchestrate({ request, session: null, req: guestReq }))
+
+    expect(events[0]).toEqual({ type: 'step', step: 'fetching' })
+    expect(events[1]).toEqual({ type: 'step', step: 'planning' })
+    expect(mockNormalizeInput).toHaveBeenCalledWith(request)
+  })
+
+  it('emits error when source normalization fails', async () => {
+    mockNormalizeInput.mockRejectedValueOnce(new Error('Blocked URL'))
+
+    const orch = new GenerationOrchestrator()
+    const request: GenerationRequest = {
+      inputType: 'URL',
+      inputValue: 'https://example.com/article',
+      studyMode: 'OVERVIEW',
+    }
+
+    const events = await collectEvents(orch.orchestrate({ request, session: null, req: guestReq }))
+
+    expect(events).toEqual([
+      { type: 'step', step: 'fetching' },
+      {
+        type: 'error',
+        message: 'Unable to fetch source content. Check the URL or paste the text instead.',
+      },
+    ])
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 })

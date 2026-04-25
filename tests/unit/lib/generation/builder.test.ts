@@ -25,7 +25,7 @@ describe('GuideBuilder', () => {
     expect(mdx).not.toContain('Practice Questions')
   })
 
-  it('includes a Practice Questions section when quiz items added', () => {
+  it('includes Quiz MDX components when quiz items added', () => {
     const mdx = new GuideBuilder()
       .setTitle('Exam Guide')
       .addQuiz({
@@ -36,8 +36,9 @@ describe('GuideBuilder', () => {
       .build()
 
     expect(mdx).toContain('## Practice Questions')
-    expect(mdx).toContain('What is JSX?')
-    expect(mdx).toContain('**Answer:** B')
+    expect(mdx).toContain('<Quiz question={"What is JSX?"}')
+    expect(mdx).toContain('options={[')
+    expect(mdx).toContain('correct={1}')
   })
 
   it('supports fluent chaining', () => {
@@ -46,20 +47,18 @@ describe('GuideBuilder', () => {
     expect(result).toBe(builder)
   })
 
-  it('uses correct letter labels for quiz options', () => {
+  it('includes flashcards MDX when flashcards are added', () => {
     const mdx = new GuideBuilder()
       .setTitle('G')
-      .addQuiz({
-        question: 'Q?',
-        options: ['First', 'Second', 'Third', 'Fourth'],
-        correctIndex: 2,
-      })
+      .addFlashcards([
+        { front: 'Front one', back: 'Back one' },
+        { front: 'Front two', back: 'Back two' },
+      ])
       .build()
 
-    expect(mdx).toContain('A) First')
-    expect(mdx).toContain('B) Second')
-    expect(mdx).toContain('C) Third')
-    expect(mdx).toContain('D) Fourth')
-    expect(mdx).toContain('**Answer:** C')
+    expect(mdx).toContain('## Flashcards')
+    expect(mdx).toContain('<Flashcards cards={')
+    expect(mdx).toContain('Front one')
+    expect(mdx).toContain('Back two')
   })
 })

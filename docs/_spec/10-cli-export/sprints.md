@@ -1,12 +1,12 @@
 # Sprints — Spec 10: CLI Source Export
 
-> **Status:** 🔜 Not started — independent; no feature dependencies
+> **Status:** ✅ Complete — Sprint 10-A and Sprint 10-B are implemented and locally validated
 
 ---
 
 ## Sprint 10-A — Core export logic + tests
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** File collection, filtering, always-exclude rules, section formatting, token estimate.
 
 **Files touched:**
@@ -46,7 +46,7 @@
 
 ## Sprint 10-B — CLI entrypoint, flags, integration test
 
-**Status:** 🔜 Not started  
+**Status:** ✅ Complete  
 **Scope:** `scripts/export-source.ts` main function, `parseArgs` integration, stdout/file output, `--help`.
 
 **Files touched:**
@@ -66,7 +66,8 @@
 **Tests added:**
 
 - `tests/integration/cli/export-source.test.ts` — spawns the script as a subprocess via `node:child_process` `execFile`, checks exit code and stdout content.
-- `tests/e2e/cli/fixture-repo.test.ts` — T-13: runs CLI against `tests/fixtures/cli-fixture-repo/`, asserts TOC, fenced blocks, and summary footer in output.
+- `tests/integration/cli/export-source.test.ts` also covers the fixture-repo end-to-end CLI contract, including default output, include/exclude flag wiring, warning-path behavior, and binary fixture exclusion.
+- `docs/architecture.md` — Command pattern entry documenting the CLI entrypoint and helper split.
 
 **Entry criteria:** Sprint 10-A complete.  
-**Exit criteria:** CLI-01 through CLI-16 criteria verified; all T-01 through T-13 pass (including E2E fixture test T-13); `pnpm export:source --stdout | grep -i 'API_KEY'` returns nothing; Definition of Done checklist satisfied.
+**Exit criteria:** CLI-01 through CLI-16 criteria verified; all T-01 through T-13 pass; `pnpm export:source --stdout | grep -Ei 'ANTHROPIC_API_KEY|FAL_API_KEY|TAVILY_API_KEY'` returns nothing; `pnpm lint` and `pnpm typecheck` pass; local Definition of Done items are satisfied.

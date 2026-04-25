@@ -16,6 +16,12 @@ export interface QuizItem {
   question: string
   options: string[]
   correctIndex: number
+  explanation?: string
+}
+
+export interface FlashcardItem {
+  front: string
+  back: string
 }
 
 export interface NormalizedInput {

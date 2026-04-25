@@ -26,6 +26,12 @@ const eslintConfig = defineConfig([
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
+    rules: {
+      'no-console': 'error',
+    },
+  },
 ])
 
 export default eslintConfig

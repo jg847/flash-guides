@@ -15,19 +15,19 @@ FlashGuides is a web application whose homepage is an AI chatbot that generates 
 
 ## Spec index
 
-| #                                       | Feature                                 | Status            | Dependencies |
-| --------------------------------------- | --------------------------------------- | ----------------- | ------------ |
-| [01](./01-infrastructure/spec.md)       | Infrastructure & Project Setup          | ✅ Done (Phase 0) | —            |
-| [02](./02-authentication/spec.md)       | Authentication & Session Management     | 📝 Spec ready     | 01           |
-| [03](./03-guest-experience/spec.md)     | Guest vs. Registered Experience         | 📝 Spec ready     | 02           |
-| [04](./04-chat-homepage/spec.md)        | Chat Homepage & Generation Orchestrator | 📝 Spec ready     | 02, 03, 05   |
-| [05](./05-mcp-integrations/spec.md)     | MCP Tool Integrations                   | 📝 Spec ready     | 01           |
-| [06](./06-study-guide-renderer/spec.md) | Study Guide Renderer                    | 📝 Spec ready     | 04           |
-| [07](./07-user-dashboard/spec.md)       | User Dashboard                          | 📝 Spec ready     | 04, 06       |
-| [08](./08-account-management/spec.md)   | Account Management                      | 📝 Spec ready     | 02           |
-| [09](./09-sharing-export/spec.md)       | Sharing & Export                        | 📝 Spec ready     | 06           |
-| [10](./10-cli-export/spec.md)           | CLI: Source Export Tool                 | 📝 Spec ready     | 01           |
-| [11](./11-observability/spec.md)        | Observability & Hardening               | 📝 Spec ready     | 04           |
+| #                                       | Feature                                 | Status                                                            | Dependencies |
+| --------------------------------------- | --------------------------------------- | ----------------------------------------------------------------- | ------------ |
+| [01](./01-infrastructure/spec.md)       | Infrastructure & Project Setup          | ✅ Done (Phase 0)                                                 | —            |
+| [02](./02-authentication/spec.md)       | Authentication & Session Management     | 📝 Spec ready                                                     | 01           |
+| [03](./03-guest-experience/spec.md)     | Guest vs. Registered Experience         | 📝 Spec ready                                                     | 02           |
+| [04](./04-chat-homepage/spec.md)        | Chat Homepage & Generation Orchestrator | 📝 Spec ready                                                     | 02, 03, 05   |
+| [05](./05-mcp-integrations/spec.md)     | MCP Tool Integrations                   | 📝 Spec ready                                                     | 01           |
+| [06](./06-study-guide-renderer/spec.md) | Study Guide Renderer                    | 📝 Spec ready                                                     | 04           |
+| [07](./07-user-dashboard/spec.md)       | User Dashboard                          | ✅ Implemented                                                    | 04, 06       |
+| [08](./08-account-management/spec.md)   | Account Management                      | ✅ Implemented                                                    | 02           |
+| [09](./09-sharing-export/spec.md)       | Sharing & Export                        | ✅ Implemented                                                    | 06           |
+| [10](./10-cli-export/spec.md)           | CLI: Source Export Tool                 | ✅ Implemented                                                    | 01           |
+| [11](./11-observability/spec.md)        | Observability & Hardening               | 🚧 In progress — core hardening + API error responses implemented | 04           |
 
 ---
 

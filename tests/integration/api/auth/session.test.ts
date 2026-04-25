@@ -15,7 +15,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }))
 
-import { GET } from '@/app/api/auth/[...nextauth]/route'
+import { GET, POST } from '@/app/api/auth/[...nextauth]/route'
 
 /**
  * Integration tests for the Auth.js session REST endpoint.
@@ -46,6 +46,36 @@ describe('GET /api/auth/session', () => {
     const contentType = res.headers.get('content-type') ?? ''
     expect(contentType).toContain('application/json')
   })
+
+  it('returns csrf cookie flags on the auth csrf endpoint over https', async () => {
+    const previousAuthUrl = process.env['AUTH_URL']
+    const previousNextAuthUrl = process.env['NEXTAUTH_URL']
+
+    process.env['AUTH_URL'] = 'https://flashguides.example'
+    process.env['NEXTAUTH_URL'] = 'https://flashguides.example'
+
+    const req = new NextRequest('https://flashguides.example/api/auth/csrf')
+    const res = await GET(req)
+
+    if (previousAuthUrl === undefined) {
+      delete process.env['AUTH_URL']
+    } else {
+      process.env['AUTH_URL'] = previousAuthUrl
+    }
+
+    if (previousNextAuthUrl === undefined) {
+      delete process.env['NEXTAUTH_URL']
+    } else {
+      process.env['NEXTAUTH_URL'] = previousNextAuthUrl
+    }
+
+    expect(res.status).toBe(200)
+
+    const setCookie = res.headers.get('set-cookie') ?? ''
+    expect(setCookie).toContain('HttpOnly')
+    expect(setCookie).toContain('SameSite=Lax')
+    expect(setCookie).toContain('Secure')
+  })
 })
 
 describe('GET /api/auth/providers', () => {
@@ -60,5 +90,23 @@ describe('GET /api/auth/providers', () => {
     expect(body['google']?.type).toBe('oidc')
     expect(body).toHaveProperty('credentials')
     expect(body['credentials']?.type).toBe('credentials')
+  })
+})
+
+describe('POST /api/auth/* csrf protection', () => {
+  it('rejects mismatched origins before delegating to Auth.js', async () => {
+    const req = new NextRequest('http://localhost:3000/api/auth/signin/credentials', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        origin: 'https://attacker.example',
+      },
+      body: new URLSearchParams({ email: 'user@example.com', password: 'SecurePass1' }),
+    })
+
+    const res = await POST(req)
+
+    expect(res.status).toBe(403)
+    await expect(res.json()).resolves.toEqual({ error: 'Forbidden' })
   })
 })

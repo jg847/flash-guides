@@ -27,8 +27,11 @@ export default function PromptBox() {
   const abortRef = useRef<AbortController | null>(null)
 
   const currentStep =
-    genState === 'planning' || genState === 'writing' || genState === 'done'
-      ? (genState as 'planning' | 'writing' | 'done')
+    genState === 'planning' ||
+    genState === 'writing' ||
+    genState === 'done' ||
+    (genState === 'fetching' && inputType === 'URL')
+      ? (genState as 'fetching' | 'planning' | 'writing' | 'done')
       : null
 
   const isGenerating = genState === 'fetching' || genState === 'planning' || genState === 'writing'
@@ -99,7 +102,11 @@ export default function PromptBox() {
           }
 
           if (event.type === 'step') {
-            if (event.step === 'planning' || event.step === 'writing') {
+            if (
+              event.step === 'fetching' ||
+              event.step === 'planning' ||
+              event.step === 'writing'
+            ) {
               setGenState(event.step)
             }
           } else if (event.type === 'token') {

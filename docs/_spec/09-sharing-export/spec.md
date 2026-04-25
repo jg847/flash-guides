@@ -1,7 +1,7 @@
 # Spec 09 — Sharing & Export
 
 > **Phase:** 3 — Content Distribution  
-> **Status:** 🔜 Not started — depends on Spec 06 (renderer) + Spec 07 (dashboard)
+> **Status:** ✅ Implemented — sharing, fork, and export flows shipped; depends on Spec 06 (renderer) + Spec 07 (dashboard)
 
 ---
 

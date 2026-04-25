@@ -1,4 +1,4 @@
-import type { GuideSection, QuizItem } from '@/types/generation'
+import type { FlashcardItem, GuideSection, QuizItem } from '@/types/generation'
 
 /**
  * GuideBuilder — fluent Builder pattern for assembling MDX study guide content.
@@ -14,6 +14,7 @@ export class GuideBuilder {
   private title = ''
   private readonly sections: GuideSection[] = []
   private readonly quizItems: QuizItem[] = []
+  private readonly flashcards: FlashcardItem[] = []
 
   setTitle(title: string): this {
     this.title = title
@@ -28,6 +29,20 @@ export class GuideBuilder {
   addQuiz(item: QuizItem): this {
     this.quizItems.push(item)
     return this
+  }
+
+  addFlashcard(card: FlashcardItem): this {
+    this.flashcards.push(card)
+    return this
+  }
+
+  addFlashcards(cards: FlashcardItem[]): this {
+    this.flashcards.push(...cards)
+    return this
+  }
+
+  private serializeString(value: string): string {
+    return JSON.stringify(value)
   }
 
   /**
@@ -46,17 +61,22 @@ export class GuideBuilder {
       parts.push('')
     }
 
+    if (this.flashcards.length > 0) {
+      parts.push('## Flashcards\n')
+      parts.push(`<Flashcards cards={${JSON.stringify(this.flashcards)}} />`)
+      parts.push('')
+    }
+
     // Quiz section (Exam Prep mode)
     if (this.quizItems.length > 0) {
       parts.push('## Practice Questions\n')
       this.quizItems.forEach((item, index) => {
-        parts.push(`**Q${index + 1}:** ${item.question}\n`)
-        item.options.forEach((opt, i) => {
-          const letter = String.fromCharCode(65 + i) // A, B, C, D
-          parts.push(`- ${letter}) ${opt}`)
-        })
-        const correctLetter = String.fromCharCode(65 + (item.correctIndex ?? 0))
-        parts.push(`\n**Answer:** ${correctLetter}\n`)
+        const explanation =
+          item.explanation ?? `Review the material and revisit question ${index + 1}.`
+        parts.push(
+          `<Quiz question={${this.serializeString(item.question)}} options={${JSON.stringify(item.options)}} correct={${item.correctIndex}} explanation={${this.serializeString(explanation)}} />`,
+        )
+        parts.push('')
       })
     }
 
