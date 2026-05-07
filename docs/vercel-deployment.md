@@ -24,6 +24,17 @@ Use [vercel-env-checklist.md](./vercel-env-checklist.md) for a redacted migratio
 8. Update Google OAuth allowed origins and redirect URLs to match that domain.
 9. Redeploy after the environment variables are saved.
 
+## Effective Vercel config
+
+The current repo is set up for Vercel with these assumptions:
+
+- Install command: `pnpm install --no-optional --frozen-lockfile`
+- Build command: `pnpm db:generate && pnpm build`
+- Production database: remote `libsql://...` or `https://...` SQLite-compatible URL
+- Local database: `file:...` SQLite only
+
+If you have manually overridden the install or build command in the Vercel dashboard, make it match the repo configuration before retrying a deploy.
+
 ## OAuth settings
 
 For Google OAuth, configure these values in Google Cloud:
@@ -75,8 +86,18 @@ If you keep the default Vercel domain, use that hostname until your custom domai
 - Local development can keep using `DATABASE_URL=file:./data/dev.db`.
 - Production on Vercel should not use `file:` SQLite because the filesystem is ephemeral.
 - `better-sqlite3` is kept as an optional local-only dependency, and Vercel skips optional installs so native SQLite build scripts do not run there.
+- `src/lib/db/client.ts` loads the local SQLite adapter through a runtime-only path so Turbopack does not try to resolve `@prisma/adapter-better-sqlite3` during Vercel builds.
+- The Prisma adapter type is derived from the generated Prisma client instead of importing `@prisma/driver-adapter-utils`, which avoids another Vercel-only module resolution failure.
 - `vercel.json` already ensures Prisma client generation runs during Vercel builds.
 - Email and redirect links automatically use `NEXT_PUBLIC_APP_URL`, `AUTH_URL`, `NEXTAUTH_URL`, or Vercel-provided host variables, in that order.
+
+## If a deploy still fails
+
+1. Confirm the deployment is using the latest pushed commit.
+2. Check that Vercel is not overriding the install command from [vercel.json](../vercel.json).
+3. Check that `DATABASE_URL` in Vercel is a remote libsql-compatible URL, not a `file:` URL.
+4. Check that `DATABASE_AUTH_TOKEN` is present when the remote database requires it.
+5. If the error mentions Google auth or callback URLs, update the Google Cloud OAuth settings to match the live Vercel hostname exactly.
 
 ## Quick deploy checklist
 
