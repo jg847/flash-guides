@@ -2,7 +2,6 @@ import { execFile } from 'node:child_process'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { PDFParse } from 'pdf-parse'
 import { claudeClient } from '@/lib/ai/claude'
 
 export class ReadableFileError extends Error {
@@ -81,6 +80,7 @@ type PdfParseInstance = {
 }
 
 async function createPdfParser(buffer: Buffer): Promise<PdfParseInstance> {
+  const { PDFParse } = await import('pdf-parse')
   return new PDFParse({ data: buffer }) as PdfParseInstance
 }
 

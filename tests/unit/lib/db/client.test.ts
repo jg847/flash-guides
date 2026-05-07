@@ -31,7 +31,6 @@ describe('prisma deferred client', () => {
 
     process.env['DATABASE_URL'] = 'https://example-db.invalid'
     process.env['DATABASE_AUTH_TOKEN'] = 'token'
-    process.env['NODE_ENV'] = 'test'
 
     Reflect.deleteProperty(globalThis as object, 'prisma')
     Reflect.deleteProperty(globalThis as object, 'prismaAdapter')
