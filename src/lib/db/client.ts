@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import { PrismaClient } from '@/generated/prisma'
 
 type PrismaClientOptions = NonNullable<ConstructorParameters<typeof PrismaClient>[0]>
@@ -10,9 +11,7 @@ const globalForPrisma = globalThis as unknown as {
   prismaAdapter: PrismaDriverAdapter | undefined
 }
 
-const importOptionalModule = new Function('moduleName', 'return import(moduleName)') as (
-  moduleName: string,
-) => Promise<unknown>
+const requireModule = createRequire(import.meta.url)
 
 export function getDatabaseUrl(): string {
   const databaseUrl = process.env['DATABASE_URL']
@@ -45,7 +44,7 @@ function getRemoteDatabaseAuthToken(): string | undefined {
 }
 
 async function createLocalPrismaAdapter(databaseUrl: string): Promise<PrismaDriverAdapter> {
-  const sqliteAdapterModule = (await importOptionalModule('@prisma/adapter-better-sqlite3')) as {
+  const sqliteAdapterModule = requireModule('@prisma/adapter-better-sqlite3') as {
     PrismaBetterSqlite3: new (config: { url: string }) => PrismaDriverAdapter
   }
 
