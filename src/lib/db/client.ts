@@ -94,36 +94,40 @@ async function getPrismaClient(): Promise<PrismaClient> {
   return globalForPrisma.prisma
 }
 
-export const prisma = new Proxy({} as PrismaClient, {
-  get(_target, property, receiver) {
-    const getBoundValue = async () => {
-      const client = await getPrismaClient()
-      const value = Reflect.get(client as object, property, receiver)
-
-      return typeof value === 'function' ? value.bind(client) : value
-    }
-
-    if (property === '$connect' || property === '$disconnect' || property === '$transaction') {
-      return async (...args: unknown[]) => {
-        const value = await getBoundValue()
-        if (typeof value !== 'function') {
-          return value
-        }
-
-        return value(...args)
+function createDeferredProxy<T>(getValue: () => Promise<T>): T {
+  return new Proxy(function deferredPrismaAccess() {} as object, {
+    get(_target, property) {
+      if (property === 'then') {
+        return undefined
       }
-    }
 
-    return (...args: unknown[]) =>
-      getBoundValue().then((value) => {
-        if (typeof value !== 'function') {
-          return value
+      return createDeferredProxy(async () => {
+        const value = await getValue()
+
+        if ((typeof value !== 'object' && typeof value !== 'function') || value === null) {
+          throw new TypeError(
+            `Cannot access property ${String(property)} on a non-object Prisma value`,
+          )
         }
 
-        return value(...args)
+        const nestedValue = Reflect.get(value as object, property, value)
+
+        return typeof nestedValue === 'function' ? nestedValue.bind(value) : nestedValue
       })
-  },
-}) as PrismaClient
+    },
+    apply(_target, _thisArg, argArray) {
+      return getValue().then((value) => {
+        if (typeof value !== 'function') {
+          throw new TypeError('Attempted to call a non-function Prisma value')
+        }
+
+        return Reflect.apply(value, undefined, argArray)
+      })
+    },
+  }) as T
+}
+
+export const prisma = createDeferredProxy(() => getPrismaClient()) as PrismaClient
 
 if (process.env['NODE_ENV'] !== 'production' && process.env['DATABASE_URL']) {
   void getPrismaClient()
