@@ -1,12 +1,15 @@
 import { PrismaClient } from '@/generated/prisma'
+import { PrismaLibSql } from '@prisma/adapter-libsql'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+
+type PrismaSqliteAdapter = PrismaBetterSqlite3 | PrismaLibSql
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
-  prismaAdapter: PrismaBetterSqlite3 | undefined
+  prismaAdapter: PrismaSqliteAdapter | undefined
 }
 
-function getDatabaseUrl(): string {
+export function getDatabaseUrl(): string {
   const databaseUrl = process.env['DATABASE_URL']
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is required')
@@ -15,11 +18,45 @@ function getDatabaseUrl(): string {
   return databaseUrl
 }
 
-function getPrismaAdapter(): PrismaBetterSqlite3 {
+export function isFileDatabaseUrl(databaseUrl: string = getDatabaseUrl()): boolean {
+  return databaseUrl.startsWith('file:')
+}
+
+export function isRemoteLibsqlDatabaseUrl(databaseUrl: string = getDatabaseUrl()): boolean {
+  return (
+    databaseUrl.startsWith('libsql:') ||
+    databaseUrl.startsWith('https:') ||
+    databaseUrl.startsWith('http:')
+  )
+}
+
+function getRemoteDatabaseAuthToken(): string | undefined {
+  return (
+    process.env['DATABASE_AUTH_TOKEN'] ??
+    process.env['TURSO_AUTH_TOKEN'] ??
+    process.env['LIBSQL_AUTH_TOKEN'] ??
+    undefined
+  )
+}
+
+function getPrismaAdapter(): PrismaSqliteAdapter {
   if (!globalForPrisma.prismaAdapter) {
-    globalForPrisma.prismaAdapter = new PrismaBetterSqlite3({
-      url: getDatabaseUrl(),
-    })
+    const databaseUrl = getDatabaseUrl()
+
+    if (isFileDatabaseUrl(databaseUrl)) {
+      globalForPrisma.prismaAdapter = new PrismaBetterSqlite3({
+        url: databaseUrl,
+      })
+    } else if (isRemoteLibsqlDatabaseUrl(databaseUrl)) {
+      globalForPrisma.prismaAdapter = new PrismaLibSql({
+        url: databaseUrl,
+        authToken: getRemoteDatabaseAuthToken(),
+      })
+    } else {
+      throw new Error(
+        'Unsupported DATABASE_URL for this deployment. Use file:... locally or a libsql/https remote SQLite URL in production.',
+      )
+    }
   }
 
   return globalForPrisma.prismaAdapter

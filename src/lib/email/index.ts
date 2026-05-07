@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { getAppUrl } from '@/lib/utils/app-url'
 
 function createTransport() {
   return nodemailer.createTransport({
@@ -15,13 +16,12 @@ function createTransport() {
 }
 
 const FROM = process.env['SMTP_FROM'] ?? 'noreply@flashguides.local'
-const APP_URL = process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000'
 
 /**
  * Send an email verification link to a newly registered user.
  */
 export async function sendVerificationEmail(email: string, token: string): Promise<void> {
-  const url = `${APP_URL}/verify-email?token=${token}`
+  const url = `${getAppUrl()}/verify-email?token=${token}`
   const transport = createTransport()
 
   await transport.sendMail({
@@ -39,7 +39,7 @@ export async function sendVerificationEmail(email: string, token: string): Promi
  * Send a password reset link.
  */
 export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
-  const url = `${APP_URL}/reset-password?token=${token}`
+  const url = `${getAppUrl()}/reset-password?token=${token}`
   const transport = createTransport()
 
   await transport.sendMail({
@@ -57,7 +57,7 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
  * Send an email change verification link.
  */
 export async function sendEmailChangeVerification(email: string, token: string): Promise<void> {
-  const url = `${APP_URL}/api/account/verify-email-change?token=${token}`
+  const url = `${getAppUrl()}/api/account/verify-email-change?token=${token}`
   const transport = createTransport()
 
   await transport.sendMail({

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/db/client', () => ({
+  isFileDatabaseUrl: vi.fn(() => true),
   prisma: {
     $executeRawUnsafe: vi.fn(),
   },

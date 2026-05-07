@@ -14,6 +14,7 @@ const credentialsSchema = z.object({
 
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
   session: {
     strategy: 'jwt',
   },

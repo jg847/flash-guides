@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/client'
 import { consumeVerificationToken } from '@/lib/auth/tokens'
 import { createApiErrorResponse, handleApiError } from '@/lib/errors/handler'
+import { getAppUrl } from '@/lib/utils/app-url'
 
 export async function GET(req: Request) {
   try {
@@ -31,9 +32,7 @@ export async function GET(req: Request) {
       data: { emailVerified: new Date() },
     })
 
-    return NextResponse.redirect(
-      new URL('/dashboard?verified=1', process.env['NEXTAUTH_URL'] ?? 'http://localhost:3000'),
-    )
+    return NextResponse.redirect(new URL('/dashboard?verified=1', getAppUrl()))
   } catch (error) {
     return handleApiError(error, req)
   }

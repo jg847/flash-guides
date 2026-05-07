@@ -2,7 +2,15 @@
  * Runs required SQLite PRAGMAs on first connection.
  * Call this once at application startup (e.g., in instrumentation.ts).
  */
-import { prisma } from './client'
+import { isFileDatabaseUrl, prisma } from './client'
+
+const LOCAL_SQLITE_BOOT_SQL = [
+  'PRAGMA journal_mode = WAL;',
+  'PRAGMA synchronous = NORMAL;',
+  'PRAGMA foreign_keys = ON;',
+  'PRAGMA busy_timeout = 5000;',
+  'PRAGMA temp_store = MEMORY;',
+] as const
 
 const GUIDE_SEARCH_BOOT_SQL = [
   'CREATE VIRTUAL TABLE IF NOT EXISTS "guides_fts" USING fts5("id" UNINDEXED, "title", "content", content=\'guides\', content_rowid=\'rowid\', tokenize=\'unicode61\');',
@@ -13,11 +21,11 @@ const GUIDE_SEARCH_BOOT_SQL = [
 ] as const
 
 export async function bootDatabase(): Promise<void> {
-  await prisma.$executeRawUnsafe('PRAGMA journal_mode = WAL;')
-  await prisma.$executeRawUnsafe('PRAGMA synchronous = NORMAL;')
-  await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON;')
-  await prisma.$executeRawUnsafe('PRAGMA busy_timeout = 5000;')
-  await prisma.$executeRawUnsafe('PRAGMA temp_store = MEMORY;')
+  if (isFileDatabaseUrl()) {
+    for (const statement of LOCAL_SQLITE_BOOT_SQL) {
+      await prisma.$executeRawUnsafe(statement)
+    }
+  }
 
   for (const statement of GUIDE_SEARCH_BOOT_SQL) {
     await prisma.$executeRawUnsafe(statement)

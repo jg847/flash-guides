@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## FlashGuides
 
-## Getting Started
+FlashGuides is a Next.js study guide application with guest and authenticated flows, guide generation, sharing, exports, and follow-up chat.
 
-First, run the development server:
+## Local development
+
+1. Copy `.env.example` to `.env` and fill in the values you need.
+2. Install dependencies with `pnpm install`.
+3. Generate Prisma client with `pnpm db:generate`.
+4. Start the app with `pnpm dev`.
+
+Common local URLs:
+
+- App: `http://localhost:3000`
+- MinIO: `http://localhost:9000`
+- Mailhog SMTP UI when running docker-compose locally: `http://localhost:8025`
+
+## Useful commands
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
+pnpm test
+pnpm exec tsc --noEmit
+pnpm build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Vercel deployment requires a remote libsql/Turso database plus external SMTP and S3-compatible storage. Use these files as the starting point:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [.env.vercel.example](.env.vercel.example)
+- [docs/vercel-deployment.md](docs/vercel-deployment.md)
 
-## Learn More
+## Notes
 
-To learn more about Next.js, take a look at the following resources:
+- Local development can continue using file-based SQLite.
+- Production on Vercel should use a remote libsql-compatible database.
+- Email links and auth redirects use deployment-aware URL resolution.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For architecture and deeper implementation notes, see [docs/architecture.md](docs/architecture.md).
