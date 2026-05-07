@@ -1,9 +1,13 @@
 import { PrismaClient } from '@/generated/prisma'
-import type { SqlMigrationAwareDriverAdapterFactory } from '@prisma/driver-adapter-utils'
+
+type PrismaClientOptions = NonNullable<ConstructorParameters<typeof PrismaClient>[0]>
+type PrismaDriverAdapter = PrismaClientOptions extends { adapter?: infer Adapter }
+  ? Exclude<Adapter, undefined>
+  : never
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
-  prismaAdapter: SqlMigrationAwareDriverAdapterFactory | undefined
+  prismaAdapter: PrismaDriverAdapter | undefined
 }
 
 const importOptionalModule = new Function('moduleName', 'return import(moduleName)') as (
@@ -40,11 +44,9 @@ function getRemoteDatabaseAuthToken(): string | undefined {
   )
 }
 
-async function createLocalPrismaAdapter(
-  databaseUrl: string,
-): Promise<SqlMigrationAwareDriverAdapterFactory> {
+async function createLocalPrismaAdapter(databaseUrl: string): Promise<PrismaDriverAdapter> {
   const sqliteAdapterModule = (await importOptionalModule('@prisma/adapter-better-sqlite3')) as {
-    PrismaBetterSqlite3: new (config: { url: string }) => SqlMigrationAwareDriverAdapterFactory
+    PrismaBetterSqlite3: new (config: { url: string }) => PrismaDriverAdapter
   }
 
   const { PrismaBetterSqlite3 } = sqliteAdapterModule
@@ -54,9 +56,7 @@ async function createLocalPrismaAdapter(
   })
 }
 
-async function createRemotePrismaAdapter(
-  databaseUrl: string,
-): Promise<SqlMigrationAwareDriverAdapterFactory> {
+async function createRemotePrismaAdapter(databaseUrl: string): Promise<PrismaDriverAdapter> {
   const { PrismaLibSql } = await import('@prisma/adapter-libsql')
 
   return new PrismaLibSql({
@@ -65,7 +65,7 @@ async function createRemotePrismaAdapter(
   })
 }
 
-async function getPrismaAdapter(): Promise<SqlMigrationAwareDriverAdapterFactory> {
+async function getPrismaAdapter(): Promise<PrismaDriverAdapter> {
   if (!globalForPrisma.prismaAdapter) {
     const databaseUrl = getDatabaseUrl()
 
@@ -125,6 +125,6 @@ export const prisma = new Proxy({} as PrismaClient, {
   },
 }) as PrismaClient
 
-if (process.env['NODE_ENV'] !== 'production') {
+if (process.env['NODE_ENV'] !== 'production' && process.env['DATABASE_URL']) {
   void getPrismaClient()
 }
