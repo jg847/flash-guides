@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:vercel": "pnpm db:generate && pnpm db:migrate:prod && pnpm build",
+    "db:deploy": "tsx scripts/deploy-db.ts",
+    "build:vercel": "pnpm db:generate && pnpm db:deploy && pnpm build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

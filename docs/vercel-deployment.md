@@ -33,7 +33,10 @@ The current repo is set up for Vercel with these assumptions:
 - Production database: remote `libsql://...` or `https://...` SQLite-compatible URL
 - Local database: `file:...` SQLite only
 
-`pnpm build:vercel` runs Prisma client generation, applies pending Prisma migrations with `prisma migrate deploy`, then runs the Next.js production build.
+`pnpm build:vercel` runs Prisma client generation, applies pending database migrations, then runs the Next.js production build.
+
+For local `file:` SQLite databases, deploy migrations still use `prisma migrate deploy`.
+For remote `libsql://...` or `https://...` databases, deploy migrations are applied directly with `@libsql/client` because Prisma CLI does not accept libsql URLs during the migration step.
 
 If you have manually overridden the install or build command in the Vercel dashboard, make it match the repo configuration before retrying a deploy.
 
@@ -91,6 +94,7 @@ If you keep the default Vercel domain, use that hostname until your custom domai
 - `src/lib/db/client.ts` loads the local SQLite adapter through a runtime-only path so Turbopack does not try to resolve `@prisma/adapter-better-sqlite3` during Vercel builds.
 - The Prisma adapter type is derived from the generated Prisma client instead of importing `@prisma/driver-adapter-utils`, which avoids another Vercel-only module resolution failure.
 - `vercel.json` ensures Prisma client generation and production migrations run during Vercel builds.
+- The migration step uses `pnpm db:deploy`, which falls back to raw libsql execution for remote Turso/libsql databases.
 - Email and redirect links automatically use `NEXT_PUBLIC_APP_URL`, `AUTH_URL`, `NEXTAUTH_URL`, or Vercel-provided host variables, in that order.
 
 ## If a deploy still fails
