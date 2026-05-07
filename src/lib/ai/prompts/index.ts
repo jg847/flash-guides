@@ -23,13 +23,17 @@ export const STUDY_MODE_INSTRUCTIONS: Record<StudyModeType, string> = {
 - End with a "Key Takeaways" summary section`,
 
   DEEP_DIVE: `Create a comprehensive deep-dive guide:
-- 8–12 sections with detailed technical coverage
-- Include worked examples, edge cases, and advanced nuances
-- Each section: 3–6 paragraphs
+- 10–14 sections with detailed technical coverage
+- Include worked examples, edge cases, tradeoffs, and advanced nuances
+- Each section: 4–7 paragraphs with concrete detail, not summary bullets alone
+- Add at least one dedicated section for pitfalls or misconceptions when relevant
 - End with a "Further Reading" section`,
 
   EXAM_PREP: `Create an exam-preparation guide:
-- 5–8 sections covering testable concepts
+- 8–12 sections covering all major testable concepts from the source
+- Prioritize completeness, definitions, mechanisms, comparisons, and likely exam traps
+- Each section should be study-ready with thorough explanations, mnemonics, and key recall points where useful
+- Include a "Common Mistakes" section and a "Rapid Review" section
 - Each section ends with 3–5 practice questions in this exact format:
   **Q:** Question text
   - A) option
@@ -37,7 +41,7 @@ export const STUDY_MODE_INSTRUCTIONS: Record<StudyModeType, string> = {
   - C) option
   - D) option
   **Answer:** B
-- Include a "Common Mistakes" section`,
+- Explain answers in the prose around the section so students understand the reasoning, not just the result`,
 
   ELI5: `Create a beginner-friendly "Explain Like I'm 5" guide:
 - Use simple analogies, everyday comparisons, and gentle language

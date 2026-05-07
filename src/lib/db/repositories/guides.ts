@@ -127,6 +127,10 @@ class GuideRepository implements IGuideReader, IGuideWriter {
       data.isFavorite = input.isFavorite
     }
 
+    if (input.content !== undefined) {
+      data.content = input.content
+    }
+
     if (Object.keys(data).length === 0) {
       return this.findOwnedById(input.id, input.userId)
     }

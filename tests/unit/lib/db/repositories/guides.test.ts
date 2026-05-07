@@ -181,6 +181,29 @@ describe('GuideRepository.update', () => {
     expect(result?.isFavorite).toBe(true)
   })
 
+  it('updates content for an owned guide', async () => {
+    mockFindFirst.mockResolvedValueOnce({
+      ...GUIDE_RECORD,
+      content: '# Updated',
+    })
+
+    await guideRepository.update({
+      id: GUIDE_RECORD.id,
+      userId: 'user-1',
+      content: '# Updated',
+    })
+
+    expect(mockUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: GUIDE_RECORD.id,
+        userId: 'user-1',
+      },
+      data: {
+        content: '# Updated',
+      },
+    })
+  })
+
   it('rejects folder assignment to another user folder', async () => {
     mockFolderFindFirst.mockResolvedValueOnce(null)
 

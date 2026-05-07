@@ -9,6 +9,7 @@ import PasswordSection from '@/components/account/PasswordSection'
 import EmailSection from '@/components/account/EmailSection'
 import ConnectedAccountsSection from '@/components/account/ConnectedAccountsSection'
 import DangerZone from '@/components/account/DangerZone'
+import WorkspacePageHeader from '@/components/ui/WorkspacePageHeader'
 
 export const metadata: Metadata = {
   title: 'Account - FlashGuides',
@@ -39,18 +40,10 @@ export default async function AccountPage({
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f8f6f0_0%,#f4efe7_100%)] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-[2rem] border border-stone-200 bg-white/90 p-8 shadow-sm backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-400">
-            Account
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-stone-900">
-            Manage your profile
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-stone-500">
-            Update your identity, manage connected sign-in providers, and verify account changes
-            safely.
-          </p>
-        </header>
+        <WorkspacePageHeader
+          title="Manage your profile"
+          description="Update your identity, manage connected sign-in providers, and verify account changes safely."
+        />
 
         <div className="grid gap-6 lg:grid-cols-[320px,minmax(0,1fr)]">
           <AvatarUpload image={user.image} name={user.name} />

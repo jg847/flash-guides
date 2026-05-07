@@ -59,6 +59,19 @@ describe('OverviewStrategy', () => {
     expect(prompt).toContain('overview')
   })
 
+  it('planSections prompt tells file uploads not to infer from pdf metadata or filename', async () => {
+    const strategy = new OverviewStrategy(claudeClient)
+    await strategy.planSections({
+      type: 'FILE',
+      text: 'Chapter 1 introduces data mining tasks, classification, clustering, and association rules.',
+      originalValue: '8-data-mining-overview.pdf',
+    })
+
+    const prompt = mockClient.generate.mock.calls[0]?.[0] as string
+    expect(prompt).toContain('Ground the guide only in the extracted document text below')
+    expect(prompt).toContain('Do not infer the topic from the filename')
+  })
+
   it('enrichWithMedia returns sections unchanged', async () => {
     const strategy = new OverviewStrategy(claudeClient)
     const sections = [{ heading: 'H', body: 'B' }]

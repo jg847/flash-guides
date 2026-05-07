@@ -4,6 +4,7 @@ import { StudyModeStrategyFactory } from '@/lib/study-modes/factory'
 import { GuideBuilder } from './builder'
 import { generateSlug } from './slug'
 import { normalizeInput } from './input-normalizer'
+import { sanitizeGuideContentForMdx } from '@/lib/guides/content'
 import { checkAndIncrementQuota, extractIp } from '@/lib/guest/quota'
 import type {
   GenerationRequest,
@@ -18,6 +19,59 @@ export interface OrchestratorContext {
   session: Session | null
   req: Request
   skipGuestQuotaCheck?: boolean
+}
+
+function getPersistedInputType(
+  request: GenerationRequest,
+): Exclude<GenerationRequest['inputType'], 'FILE'> {
+  return request.inputType === 'FILE' ? 'TEXT' : request.inputType
+}
+
+function isGuideContentComplete(
+  content: string,
+  title: string,
+  sections: Array<{ heading: string }>,
+  quizCount: number,
+): boolean {
+  const trimmed = content.trim()
+  if (!trimmed.startsWith('# ')) {
+    return false
+  }
+
+  if (!trimmed.includes(`# ${title}`)) {
+    return false
+  }
+
+  if (sections.some((section) => !trimmed.includes(`## ${section.heading}`))) {
+    return false
+  }
+
+  if (quizCount > 0) {
+    const renderedQuizCount = (trimmed.match(/<Quiz\s/g) ?? []).length
+    if (!trimmed.includes('## Practice Questions') || renderedQuizCount < quizCount) {
+      return false
+    }
+  }
+
+  if ((trimmed.match(/```/g) ?? []).length % 2 !== 0) {
+    return false
+  }
+
+  return true
+}
+
+function getAssembleTokenBudget(request: GenerationRequest, isRegistered: boolean): number {
+  if (request.studyMode === 'EXAM_PREP') {
+    return request.inputType === 'FILE'
+      ? isRegistered
+        ? 12288
+        : 10240
+      : isRegistered
+        ? 10240
+        : 8192
+  }
+
+  return isRegistered ? 8192 : 6144
 }
 
 /**
@@ -123,10 +177,26 @@ export class GenerationOrchestrator {
 Title: ${title}
 Sections: ${enrichedSections.map((s) => s.heading).join(', ')}
 Study mode: ${request.studyMode}
+    Registered user: ${isRegistered ? 'yes' : 'no'}
+
+    Requirements:
+    - Expand every section into a complete, study-ready treatment.
+    - Use all important information from the original source and preserve specifics.
+    - Do not compress the guide into brief summaries; prefer depth, examples, mechanisms, comparisons, and concrete detail.
+    - For EXAM_PREP, make the guide especially thorough, with strong conceptual explanations, likely exam traps, rapid-review style reinforcement, and enough detail to study from directly.
+    - For DEEP_DIVE, include advanced nuances, edge cases, tradeoffs, and worked examples where relevant.
+    - Ensure every planned section listed above appears in the final guide with a complete body.
+    - Finish the output cleanly. Do not stop mid-section, mid-list, mid-table, or mid-component.
+    - Do not leave placeholder boxes, incomplete quiz blocks, or unfinished headings.
+    - Output MDX only.
 
 ${builder.build()}`
 
-      const stream = await claudeClient.streamGenerate(assemblePrompt)
+      const stream = await claudeClient.streamGenerate(
+        assemblePrompt,
+        undefined,
+        getAssembleTokenBudget(request, isRegistered),
+      )
       const reader = stream.getReader()
 
       while (true) {
@@ -141,16 +211,25 @@ ${builder.build()}`
     }
 
     // Use streamed content if it's more complete than the assembled MDX
-    const finalContent = streamedContent.trim() || builder.build()
+    const fallbackContent = builder.build()
+    const candidateContent = streamedContent.trim()
+    const finalContent = sanitizeGuideContentForMdx(
+      candidateContent &&
+        isGuideContentComplete(candidateContent, title, enrichedSections, quizzes.length)
+        ? candidateContent
+        : fallbackContent,
+    )
 
     // ── Step 8: Persist ──────────────────────────────────────────────────────
     const slug = generateSlug(title)
+    const persistedInputType = getPersistedInputType(request)
     const guideData: GeneratedGuide = {
       title,
       slug,
       studyMode: request.studyMode,
-      inputType: request.inputType,
-      inputValue: request.inputValue,
+      inputType: persistedInputType,
+      inputValue:
+        request.inputType === 'FILE' ? (request.sourceName ?? 'Uploaded file') : request.inputValue,
       content: finalContent,
       isWatermark: !isRegistered,
       userId: session?.user?.id ?? null,
@@ -163,7 +242,7 @@ ${builder.build()}`
       },
     })
 
-    yield { type: 'done', guideSlug: slug }
+    yield { type: 'done', guideSlug: slug, isGuestGuide: !isRegistered }
   }
 }
 

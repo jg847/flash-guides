@@ -20,6 +20,9 @@ describe('getRetryAfterSeconds', () => {
 
 describe('checkGuestGenerationRateLimit', () => {
   it('maps quota storage into rate-limit metadata', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-24T23:59:30.000Z'))
+
     mockCheckAndIncrementQuota.mockResolvedValue({
       allowed: false,
       used: 3,
@@ -34,5 +37,7 @@ describe('checkGuestGenerationRateLimit', () => {
     expect(result.limit).toBe(3)
     expect(result.remaining).toBe(0)
     expect(result.retryAfter).toBeGreaterThan(0)
+
+    vi.useRealTimers()
   })
 })

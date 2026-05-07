@@ -1,7 +1,7 @@
 # Spec 11 — Observability, Security Hardening & Rate Limiting
 
 > **Phase:** Cross-cutting — applies to every phase  
-> **Status:** 🚧 In progress — request IDs, structured logging, security headers, CSRF checks, GuestQuota-backed guest rate limiting, input sanitization, and shared API error responses are implemented; app-level error boundaries and Sentry wiring remain
+> **Status:** 🚧 In progress — request IDs, structured logging, security headers, CSRF checks, GuestQuota-backed guest rate limiting, input sanitization, shared API error responses, and app-level error boundaries are implemented
 
 ---
 
@@ -14,8 +14,7 @@ This spec defines the cross-cutting concerns that must be in place before any fe
 3. **Input sanitization** — all unvalidated input sanitized before persistence or AI submission
 4. **Security headers** — Content Security Policy, HSTS, and related headers on every response
 5. **CSRF protection** — SameSite cookies + CSRF token on state-changing forms
-6. **Error tracking** — Sentry-compatible error hook (structured payload, no PII leakage)
-7. **Request tracing** — `x-request-id` propagated through all log lines and API responses
+6. **Request tracing** — `x-request-id` propagated through all log lines and API responses
 
 ---
 
@@ -48,9 +47,8 @@ This spec defines the cross-cutting concerns that must be in place before any fe
 | OB-10 | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin` appear on every response |
 | OB-11 | Session cookies use `SameSite=Lax; HttpOnly; Secure` (Auth.js default; confirmed active)                                                |
 | OB-12 | CSRF: all state-changing API routes validate that `Origin` or `Referer` header matches the app's own domain                             |
-| OB-13 | API error responses include `requestId`, `message`, and `code`; unhandled app-level error capture remains to be finished                |
+| OB-13 | API error responses include `requestId`, `message`, and `code`                                                                          |
 | OB-14 | PII (email, password hashes) is NEVER written to logs                                                                                   |
-| OB-15 | `SENTRY_DSN` env var wires errors to Sentry if set; no-op if absent                                                                     |
 
 ---
 
@@ -113,7 +111,6 @@ Handled route errors preserve their explicit user-facing messages and include th
 | ------------------ | --------------------------------------------------------- |
 | `pino`             | Structured logging (already in `package.json`)            |
 | `pino-pretty`      | Dev-mode log formatter (already in devDeps)               |
-| `@sentry/nextjs`   | Error tracking (installed if `SENTRY_DSN` is set)         |
 | `uuid` or `crypto` | `randomUUID()` from Node 19+ built-in                     |
 | Prisma             | SQLite-backed guest quota storage and rate-limit adapters |
 
@@ -150,14 +147,13 @@ Handled route errors preserve their explicit user-facing messages and include th
 
 ## 10. Definition of Done
 
-- [ ] All OB-01 through OB-15 criteria have passing tests or manual verification.
+- [ ] All OB-01 through OB-14 criteria have passing tests or manual verification.
 - [ ] `curl -I https://localhost:3000` shows all required security headers.
 - [ ] No `console.log` in `src/` (enforced by ESLint `no-console` rule under `error`).
 - [ ] `pnpm test:unit` and `pnpm test:integration` pass.
 - [ ] E2E T-10, T-11, and T-12 green.
 - [ ] No TypeScript errors (`pnpm typecheck`).
 - [ ] `pnpm lint` passes.
-- [ ] `SENTRY_DSN=test pnpm build` completes without errors.
 - [ ] Manual smoke test: rate limiting, security headers, and CSRF protection verified against Docker Compose instance.
 - [ ] No `TODO`, `FIXME`, or `@ts-ignore` in shipped code without a linked issue.
 - [ ] `docs/architecture.md` updated with middleware chain and logging patterns.

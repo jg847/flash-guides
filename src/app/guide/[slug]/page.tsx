@@ -18,6 +18,7 @@ export default async function GuidePage({ params }: GuidePageProps) {
     select: {
       id: true,
       userId: true,
+      isWatermark: true,
       slug: true,
       title: true,
       studyMode: true,
@@ -32,14 +33,17 @@ export default async function GuidePage({ params }: GuidePageProps) {
     notFound()
   }
 
-  if (!guide.isPublic && sessionUserId !== guide.userId) {
-    redirect('/login')
+  const isClaimableGuestGuide = Boolean(!guide.userId && guide.isWatermark)
+
+  if (!guide.isPublic && !isClaimableGuestGuide && sessionUserId !== guide.userId) {
+    redirect(`/login?callbackUrl=${encodeURIComponent(`/guide/${guide.slug}`)}`)
   }
 
   return (
     <GuideRenderer
       guide={guide}
       isAuthenticated={hasAuthenticatedUser(session)}
+      isClaimableGuestGuide={isClaimableGuestGuide}
       canShare={Boolean(sessionUserId && sessionUserId === guide.userId)}
     />
   )

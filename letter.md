@@ -24,27 +24,27 @@ The app must clearly differentiate guest vs. registered experiences, support ful
 
 Do not deviate from these without raising a blocker first.
 
-| Layer | Choice |
-|---|---|
-| Language | TypeScript (strict mode) |
-| Framework | Next.js 14+ (App Router, Server Components) |
-| UI | React + Tailwind CSS + shadcn/ui |
-| AI client | Vercel AI SDK (`ai`) + `@anthropic-ai/sdk` |
-| MCP | `@modelcontextprotocol/sdk` |
-| MCP — Web Search | Tavily API (`@tavily/core`) |
-| MCP — Image Generation | fal.ai FLUX (`@fal-ai/client`) |
-| MCP — YouTube Transcripts | `youtube-transcript` npm package |
-| Auth | Auth.js (NextAuth v5) — email/password + Google OAuth |
-| Database | **SQLite** (WAL mode, volume-mounted) |
-| ORM | Prisma |
-| Validation | Zod |
-| Content | MDX (`next-mdx-remote` or similar) |
-| Object storage | MinIO (S3-compatible, Docker) |
-| Dev email | Mailhog (Docker) |
-| Containerization | Docker + Docker Compose |
-| CI/CD | GitHub Actions |
-| Testing | Vitest + React Testing Library + Playwright + MSW |
-| Lint/Format | ESLint + Prettier + Husky + lint-staged |
+| Layer                     | Choice                                                |
+| ------------------------- | ----------------------------------------------------- |
+| Language                  | TypeScript (strict mode)                              |
+| Framework                 | Next.js 14+ (App Router, Server Components)           |
+| UI                        | React + Tailwind CSS + shadcn/ui                      |
+| AI client                 | Vercel AI SDK (`ai`) + `@anthropic-ai/sdk`            |
+| MCP                       | `@modelcontextprotocol/sdk`                           |
+| MCP — Web Search          | Tavily API (`@tavily/core`)                           |
+| MCP — Image Generation    | fal.ai FLUX (`@fal-ai/client`)                        |
+| MCP — YouTube Transcripts | `youtube-transcript` npm package                      |
+| Auth                      | Auth.js (NextAuth v5) — email/password + Google OAuth |
+| Database                  | **SQLite** (WAL mode, volume-mounted)                 |
+| ORM                       | Prisma                                                |
+| Validation                | Zod                                                   |
+| Content                   | MDX (`next-mdx-remote` or similar)                    |
+| Object storage            | MinIO (S3-compatible, Docker)                         |
+| Dev email                 | Mailhog (Docker)                                      |
+| Containerization          | Docker + Docker Compose                               |
+| CI/CD                     | GitHub Actions                                        |
+| Testing                   | Vitest + React Testing Library + Playwright + MSW     |
+| Lint/Format               | ESLint + Prettier + Husky + lint-staged               |
 
 ---
 
@@ -53,18 +53,23 @@ Do not deviate from these without raising a blocker first.
 Execute in this exact order. **Do not begin implementation before specs and sprint plans exist.**
 
 ### Phase 0 — Repo bootstrap
+
 Initialize the repository with all infrastructure (Section 4) before writing feature code.
 
 ### Phase 1 — Author feature specs
+
 Create a `docs/_spec/` folder and produce one spec file per feature listed in Section 7. Each spec is a self-contained requirements document. Template in Section 5.
 
 ### Phase 2 — Break each spec into sprints
+
 For every spec, produce a sibling file `docs/_spec/<feature>/sprints.md` that decomposes the spec into ordered sprints. Each sprint has a focused scope (1–3 days of work), explicit entry/exit criteria, file-level implementation notes, and the tests that gate the sprint's completion.
 
 ### Phase 3 — Implement sprint by sprint
+
 For each sprint: implement, write tests, pass CI, open a PR, merge, update the sprint doc's status. Never start a sprint whose dependencies are incomplete.
 
 ### Phase 4 — Verify MVP completeness
+
 Every feature must meet its Definition of Done (Section 8) before the project is considered MVP-complete.
 
 ---
@@ -141,6 +146,7 @@ flashguides/
 ### SQLite tuning
 
 On first app boot, run:
+
 ```
 PRAGMA journal_mode = WAL;
 PRAGMA synchronous = NORMAL;
@@ -148,6 +154,7 @@ PRAGMA foreign_keys = ON;
 PRAGMA busy_timeout = 5000;
 PRAGMA temp_store = MEMORY;
 ```
+
 Ship a small nightly backup script (`sqlite3 .backup`) that drops timestamped copies to `/data/backups/` and prunes anything older than 14 days.
 
 ### GitHub Actions
@@ -155,6 +162,7 @@ Ship a small nightly backup script (`sqlite3 .backup`) that drops timestamped co
 Two workflows at minimum.
 
 `ci.yml` runs on every push and PR:
+
 - `pnpm install` (cached)
 - `pnpm lint`
 - `pnpm typecheck`
@@ -165,6 +173,7 @@ Two workflows at minimum.
 - Upload coverage report as artifact
 
 `docker.yml` runs on push to `main`:
+
 - Build and tag Docker image
 - Push to GHCR
 - Tag with commit SHA and `latest`
@@ -207,22 +216,24 @@ Testing is not optional. Every spec's test plan must table tests across three ax
 
 ### Test taxonomy
 
-| Type | Tool | Scope |
-|---|---|---|
-| Unit | Vitest | Pure functions, classes, hooks, utilities |
+| Type        | Tool                 | Scope                                                                |
+| ----------- | -------------------- | -------------------------------------------------------------------- |
+| Unit        | Vitest               | Pure functions, classes, hooks, utilities                            |
 | Integration | Vitest + test SQLite | API routes, DB repositories, MCP client adapters with mocked network |
-| E2E | Playwright | User-level flows in a real browser against the built app |
-| Component | Vitest + RTL | Rendering, accessibility, keyboard nav for UI components |
+| E2E         | Playwright           | User-level flows in a real browser against the built app             |
+| Component   | Vitest + RTL         | Rendering, accessibility, keyboard nav for UI components             |
 
 ### Case coverage — required for every feature
 
 For each feature, the spec's test plan must enumerate at least:
 
 **Positive cases**
+
 - Happy path for each user story.
 - Boundary values that are still valid (min/max length inputs, exactly one item, etc.).
 
 **Negative cases**
+
 - Invalid inputs → correct error responses.
 - Unauthenticated access to protected routes → redirect/401.
 - Unauthorized access to another user's resource → 403.
@@ -230,6 +241,7 @@ For each feature, the spec's test plan must enumerate at least:
 - External service failure (Claude down, MCP tool 500, network timeout) → graceful degradation.
 
 **Edge cases**
+
 - Empty states (zero guides, zero results).
 - Very large inputs (50k-character text paste, 20MB page scrape).
 - Non-English / unicode / RTL text.
@@ -243,15 +255,15 @@ For each feature, the spec's test plan must enumerate at least:
 
 Use this exact structure:
 
-| # | Type | Category | Description | Given / When / Then |
-|---|---|---|---|---|
+| #   | Type | Category | Description | Given / When / Then |
+| --- | ---- | -------- | ----------- | ------------------- |
 
 ### Rate limits (locked)
 
-| Tier | Guide generations | Notes |
-|---|---|---|
+| Tier                    | Guide generations    | Notes                                            |
+| ----------------------- | -------------------- | ------------------------------------------------ |
 | Guest (unauthenticated) | 3 per day (IP-based) | Guides are watermarked; not saved to any account |
-| Registered user | Unlimited | Persisted to account |
+| Registered user         | Unlimited            | Persisted to account                             |
 
 Enforce at the `GenerationOrchestrator` layer and return HTTP 429 with a `Retry-After` header when exceeded.
 
@@ -282,7 +294,7 @@ Author one spec folder per item below, numbered `01`–`11` matching the order.
 8. **Account Management** — profile edit, change email (with re-verification), change password, connected accounts, data export (zip of Markdown + JSON), account deletion.
 9. **Sharing & Export** — public share links with revocation, fork action, export to PDF, Markdown, and single-file HTML.
 10. **CLI: Source Export Tool** — Section 9.
-11. **Observability & Hardening** — structured logging (pino), request IDs, error tracking hook-point (Sentry-compatible), rate limiting, input sanitization, CSP headers, CSRF protection where applicable.
+11. **Observability & Hardening** — structured logging (pino), request IDs, rate limiting, input sanitization, CSP headers, CSRF protection where applicable.
 
 ---
 
@@ -406,6 +418,7 @@ Only after I've reviewed those may you begin Sprint 1 of Spec 02.
 ## 12. How to ask me questions
 
 If any requirement is ambiguous or you believe a locked decision should change, open an issue titled `RFC: <topic>` with:
+
 - The ambiguity or proposed change
 - Options considered with trade-offs
 - Your recommendation

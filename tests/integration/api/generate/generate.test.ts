@@ -16,13 +16,23 @@ vi.mock('@/lib/rate-limit', () => ({
   checkGuestGenerationRateLimit: vi.fn(),
 }))
 
+vi.mock('@/lib/generation/file-extractor', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/generation/file-extractor')>()
+  return {
+    ...actual,
+    extractReadableFileText: vi.fn(),
+  }
+})
+
 import { auth } from '@/lib/auth'
+import { ReadableFileError, extractReadableFileText } from '@/lib/generation/file-extractor'
 import { generationOrchestrator } from '@/lib/generation/orchestrator'
 import { checkGuestGenerationRateLimit } from '@/lib/rate-limit'
 import { POST } from '@/app/api/generate/route'
 import type { SSEEvent } from '@/types/generation'
 
 const mockAuth = auth as ReturnType<typeof vi.fn>
+const mockExtractReadableFileText = extractReadableFileText as ReturnType<typeof vi.fn>
 const mockOrchestrate = generationOrchestrator.orchestrate as ReturnType<typeof vi.fn>
 const mockCheckGuestGenerationRateLimit = checkGuestGenerationRateLimit as ReturnType<typeof vi.fn>
 
@@ -32,6 +42,21 @@ function makeRequest(body: unknown, headers?: Record<string, string>) {
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   })
+}
+
+function makeFileRequest(file: File) {
+  const formData = new FormData()
+  formData.set('inputType', 'FILE')
+  formData.set('studyMode', 'OVERVIEW')
+  formData.set('file', file)
+
+  const req = new Request('http://localhost:3000/api/generate', {
+    method: 'POST',
+    body: formData,
+  })
+
+  vi.spyOn(req, 'formData').mockResolvedValue(formData)
+  return req
 }
 
 async function* makeEventGen(events: SSEEvent[]): AsyncGenerator<SSEEvent> {
@@ -58,6 +83,7 @@ async function readSSEResponse(res: Response): Promise<SSEEvent[]> {
 beforeEach(() => {
   vi.clearAllMocks()
   mockAuth.mockResolvedValue(null)
+  mockExtractReadableFileText.mockResolvedValue('Extracted file text')
   mockCheckGuestGenerationRateLimit.mockResolvedValue({
     allowed: true,
     used: 1,
@@ -209,6 +235,57 @@ describe('POST /api/generate', () => {
     await POST(makeRequest(VALID_BODY))
 
     expect(mockOrchestrate).toHaveBeenCalledWith(expect.objectContaining({ session: fakeSession }))
+  })
+
+  it('accepts multipart file uploads and passes extracted text to the orchestrator', async () => {
+    mockOrchestrate.mockReturnValue(makeEventGen([{ type: 'done', guideSlug: 'file-guide' }]))
+
+    const file = new File(['fake pdf bytes'], 'lecture.pdf', { type: 'application/pdf' })
+    const res = await POST(makeFileRequest(file))
+
+    expect(res.status).toBe(200)
+    expect(mockExtractReadableFileText).toHaveBeenCalled()
+    expect(mockOrchestrate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.objectContaining({
+          inputType: 'FILE',
+          inputValue: 'Extracted file text',
+          sourceName: 'lecture.pdf',
+        }),
+      }),
+    )
+  })
+
+  it('returns a readable validation error when uploaded files cannot be parsed', async () => {
+    mockExtractReadableFileText.mockRejectedValueOnce(
+      new ReadableFileError('UNREADABLE_FILE', 'Uploaded PDF did not contain readable text'),
+    )
+
+    const file = new File(['fake pdf bytes'], 'lecture.pdf', { type: 'application/pdf' })
+    const res = await POST(makeFileRequest(file))
+
+    expect(res.status).toBe(422)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('UNREADABLE_FILE')
+    expect(body.error.message).toBe('Uploaded PDF did not contain readable text')
+    expect(body.error.requestId).toBeTruthy()
+  })
+
+  it('returns a file-processing error when multipart extraction fails for a non-validation reason', async () => {
+    mockExtractReadableFileText.mockRejectedValueOnce(new Error('Anthropic API unavailable'))
+
+    const file = new File(['fake pdf bytes'], 'lecture.pdf', { type: 'application/pdf' })
+    const res = await POST(makeFileRequest(file))
+
+    expect(res.status).toBe(502)
+    const body = (await res.json()) as {
+      error: { code: string; message: string; requestId: string }
+    }
+    expect(body.error.code).toBe('FILE_PROCESSING_FAILED')
+    expect(body.error.message).toBe('We could not process that uploaded file. Please try again.')
+    expect(body.error.requestId).toBeTruthy()
   })
 
   it('passes skipGuestQuotaCheck to the orchestrator after route-level rate limiting', async () => {

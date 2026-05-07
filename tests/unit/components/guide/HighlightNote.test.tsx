@@ -26,6 +26,7 @@ function TestHarness({ isAuthenticated }: { isAuthenticated: boolean }) {
       <HighlightNote
         contentRef={ref}
         guideId="cm1234567890abcdef123456"
+        guideSlug="react-basics"
         isAuthenticated={isAuthenticated}
       />
     </div>

@@ -6,7 +6,9 @@ import { useEffect, useState } from 'react'
 interface HighlightNoteProps {
   contentRef: React.RefObject<HTMLElement | null>
   guideId: string
+  guideSlug: string
   isAuthenticated: boolean
+  onAskAboutText?: (selectedText: string) => void
 }
 
 interface TooltipState {
@@ -18,7 +20,9 @@ interface TooltipState {
 export default function HighlightNote({
   contentRef,
   guideId,
+  guideSlug,
   isAuthenticated,
+  onAskAboutText,
 }: HighlightNoteProps) {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -90,6 +94,17 @@ export default function HighlightNote({
     }
   }
 
+  function handleAskAboutThis() {
+    if (!tooltip) {
+      return
+    }
+
+    onAskAboutText?.(tooltip.selectedText)
+    window.getSelection()?.removeAllRanges()
+    setTooltip(null)
+    setStatus('idle')
+  }
+
   if (!tooltip) {
     return null
   }
@@ -110,26 +125,44 @@ export default function HighlightNote({
 
       {isAuthenticated ? (
         <div className="mt-3 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300"
-          >
-            {status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved' : 'Save note'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="rounded-full bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-300"
+            >
+              {status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved' : 'Save note'}
+            </button>
+            <button
+              type="button"
+              onClick={handleAskAboutThis}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-950 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-100"
+            >
+              Ask about this
+            </button>
+          </div>
           {status === 'error' ? (
             <span className="text-xs text-rose-600 dark:text-rose-400">Try again</span>
           ) : null}
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAskAboutThis}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-950 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-100"
+            >
+              Ask about this
+            </button>
+            <Link
+              href={`/register?callbackUrl=${encodeURIComponent(`/guide/${guideSlug}`)}`}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-950 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-100"
+            >
+              Sign up
+            </Link>
+          </div>
           <span className="text-sm text-zinc-600 dark:text-zinc-300">Sign up to save notes</span>
-          <Link
-            href="/register"
-            className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-zinc-950 hover:text-zinc-950 dark:border-zinc-700 dark:text-zinc-100 dark:hover:border-zinc-100"
-          >
-            Sign up
-          </Link>
         </div>
       )}
     </div>

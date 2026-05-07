@@ -1,6 +1,6 @@
 # Sprints — Spec 11: Observability, Security Hardening & Rate Limiting
 
-> **Status:** 🚧 In progress — Sprints 11-A through 11-C are locally complete, and Sprint 11-D now includes sanitization plus the shared API error-response rollout; app-level error boundaries, Sentry wiring, and remaining E2E coverage are still pending
+> **Status:** 🚧 In progress — Sprints 11-A through 11-C are locally complete, and Sprint 11-D now includes sanitization, the shared API error-response rollout, and the app-level error boundary; remaining work is the E2E coverage slice
 
 ---
 
@@ -117,10 +117,10 @@
 
 ---
 
-## Sprint 11-D — Input sanitization + error handler + Sentry + E2E
+## Sprint 11-D — Input sanitization + error handler + E2E
 
 **Status:** 🚧 In progress  
-**Scope:** `sanitizeInput`, global error handler, Sentry wiring, E2E tests.
+**Scope:** `sanitizeInput`, global error handler, E2E tests.
 
 **Files touched:**
 
@@ -128,10 +128,7 @@
 - `src/app/api/generate/route.ts` — sanitize generation input before validation and orchestration
 - `src/app/api/notes/route.ts` — sanitize selected text and note content before validation/persistence
 - `src/lib/errors/handler.ts` — `handleApiError(err, requestId): Response`
-- `src/lib/errors/sentry.ts` — `captureError(err, context)` (no-op if no `SENTRY_DSN`)
 - `src/app/global-error.tsx` — Next.js global error boundary (pending)
-- `src/lib/errors/sentry.ts` — `captureError(err, context)` (pending, no-op if no `SENTRY_DSN`)
-- `.env.example` — add `SENTRY_DSN=`
 - `tests/e2e/observability/security-headers.spec.ts`
 
 **Implementation notes:**
@@ -139,8 +136,7 @@
 - `sanitizeInput`: use `DOMParser` (Node 18+) or a simple regex strip of `<[^>]*>` tags + null-byte removal. No external sanitization library needed for MVP.
 - Implemented slice: generation requests and note creation now sanitize string fields before validation, persistence, or AI submission.
 - Implemented slice: `src/lib/errors/handler.ts` now provides shared requestId-aware API error responses, and the existing API routes have been migrated off ad hoc `NextResponse.json({ error: ... })` branches.
-- Pending slice: Next.js app-level error boundary and Sentry capture wiring still need to be added.
-- Pending slice: `@sentry/nextjs` remains optional and should only initialize when `SENTRY_DSN` is defined.
+- Pending slice: Next.js app-level error boundary still needs to be added.
 
 **Tests added:**
 
@@ -160,4 +156,4 @@
 - `tests/e2e/observability/security-headers.spec.ts` — T-10 and T-11
 
 **Entry criteria:** Sprint 11-C complete.  
-**Exit criteria:** All T-01 through T-12 pass; Definition of Done checklist satisfied. Current remaining work is the app-level error boundary, Sentry integration, and the E2E slice.
+**Exit criteria:** All T-01 through T-12 pass; Definition of Done checklist satisfied. Current remaining work is the E2E slice.

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { startTransition, useDeferredValue, useEffect, useRef, useState } from 'react'
 import type { FolderItem, GuideListItem } from '@/lib/db/repositories/types'
 import DashboardSearch from '@/components/dashboard/DashboardSearch'
@@ -7,6 +8,7 @@ import FolderSidebar from '@/components/dashboard/FolderSidebar'
 import GuideGrid from '@/components/dashboard/GuideGrid'
 import GuideList from '@/components/dashboard/GuideList'
 import UsageSummary from '@/components/dashboard/UsageSummary'
+import WorkspacePageHeader from '@/components/ui/WorkspacePageHeader'
 
 interface DashboardShellProps {
   initialGuides: GuideListItem[]
@@ -326,6 +328,26 @@ export default function DashboardShell({
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#f7efe4,transparent_28%),linear-gradient(180deg,#f9f6f1_0%,#f4f1ec_100%)] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[280px,minmax(0,1fr)]">
+        <div className="lg:col-span-2">
+          <WorkspacePageHeader
+            title="Your study library"
+            description="Organize saved guides, star what matters, and filter by folder or search query."
+            actions={
+              <>
+                <Link
+                  href="/"
+                  className="inline-flex items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-medium text-stone-700 transition-colors hover:border-stone-400 hover:text-stone-950"
+                >
+                  Return to homepage
+                </Link>
+                <div className="rounded-2xl bg-stone-100 px-4 py-3 text-sm text-stone-600">
+                  <span data-testid="dashboard-total">{total}</span> results · page {page}
+                </div>
+              </>
+            }
+          />
+        </div>
+
         <div className="space-y-6">
           <FolderSidebar
             folders={folders}
@@ -353,25 +375,6 @@ export default function DashboardShell({
         </div>
 
         <section className="space-y-6">
-          <header className="rounded-[2rem] border border-stone-200 bg-white/90 p-6 shadow-sm backdrop-blur">
-            <p className="text-sm font-medium uppercase tracking-[0.24em] text-stone-400">
-              Dashboard
-            </p>
-            <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <h1 className="text-4xl font-semibold tracking-tight text-stone-900">
-                  Your study library
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm text-stone-500">
-                  Organize saved guides, star what matters, and filter by folder or search query.
-                </p>
-              </div>
-              <div className="rounded-2xl bg-stone-100 px-4 py-3 text-sm text-stone-600">
-                <span data-testid="dashboard-total">{total}</span> results · page {page}
-              </div>
-            </div>
-          </header>
-
           <DashboardSearch
             value={search}
             onChange={setSearch}

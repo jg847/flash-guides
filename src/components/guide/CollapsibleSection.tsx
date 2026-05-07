@@ -20,7 +20,7 @@ export default function CollapsibleSection({
   return (
     <section
       id={id}
-      className="rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className="rounded-2xl border border-zinc-300 bg-white shadow-sm dark:border-zinc-700 dark:bg-black"
       data-testid="collapsible-section"
     >
       <h2>
@@ -29,12 +29,12 @@ export default function CollapsibleSection({
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-controls={`${id}-content`}
-          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-lg font-semibold text-zinc-900 dark:text-zinc-100"
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-lg font-semibold text-zinc-950 dark:text-zinc-50"
         >
           <span>{heading}</span>
           <span
             className={[
-              'text-sm text-zinc-500 transition-transform dark:text-zinc-400',
+              'text-sm text-zinc-600 transition-transform dark:text-zinc-300',
               open ? 'rotate-180' : 'rotate-0',
             ].join(' ')}
           >
@@ -45,7 +45,7 @@ export default function CollapsibleSection({
       <div
         id={`${id}-content`}
         hidden={!open}
-        className="px-5 pb-5 text-zinc-700 dark:text-zinc-300"
+        className="px-5 pb-5 text-zinc-800 dark:text-zinc-200"
         data-testid="collapsible-content"
       >
         {children}

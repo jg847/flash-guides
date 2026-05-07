@@ -22,6 +22,12 @@ export interface ParsedGuideContent {
   heroMedia?: GuideHeroMedia
 }
 
+export function sanitizeGuideContentForMdx(content: string): string {
+  return content
+    .replace(/(^|[^\\<{])<(?=\s*(?:=\s*)?\d)/gm, '$1&lt;')
+    .replace(/(^|[^\\>{])>(?=\s*(?:=\s*)?\d)/gm, '$1&gt;')
+}
+
 function slugifyHeading(value: string): string {
   return value
     .toLowerCase()
@@ -58,7 +64,8 @@ function extractHeroMedia(content: string): GuideHeroMedia | undefined {
 }
 
 export function parseGuideContent(content: string): ParsedGuideContent {
-  const withoutTitle = content.replace(/^#\s+.+?(?:\n|$)/, '').trim()
+  const sanitizedContent = sanitizeGuideContentForMdx(content)
+  const withoutTitle = sanitizedContent.replace(/^#\s+.+?(?:\n|$)/, '').trim()
   const lines = withoutTitle.split('\n')
 
   const introLines: string[] = []

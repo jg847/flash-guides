@@ -58,6 +58,7 @@ function mockFetch(events: SSEEvent[], status = 200) {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.unstubAllGlobals()
+  window.localStorage.clear()
 })
 
 describe('PromptBox', () => {
@@ -103,6 +104,28 @@ describe('PromptBox', () => {
     expect(body.inputValue).toBe('Photosynthesis')
   })
 
+  it('submits uploaded files as multipart form data', async () => {
+    mockFetch([{ type: 'done', guideSlug: 'file-upload-guide' }])
+
+    render(<PromptBox />)
+    fireEvent.click(screen.getByTestId('input-tab-file'))
+
+    const file = new File(['study notes'], 'notes.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByTestId('prompt-file-input'), {
+      target: { files: [file] },
+    })
+    fireEvent.click(screen.getByTestId('generate-button'))
+
+    await waitFor(() => expect(vi.mocked(fetch)).toHaveBeenCalled())
+
+    const [url, options] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('/api/generate')
+    expect(options.body).toBeInstanceOf(FormData)
+    expect((options.body as FormData).get('inputType')).toBe('FILE')
+    expect((options.body as FormData).get('studyMode')).toBe('OVERVIEW')
+    expect((options.body as FormData).get('file')).toBe(file)
+  })
+
   it('redirects to guide on done event', async () => {
     mockFetch([{ type: 'done', guideSlug: 'my-guide-abc123456' }])
 
@@ -113,6 +136,32 @@ describe('PromptBox', () => {
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/guide/my-guide-abc123456'))
   })
 
+  it('stores guest-created guide slugs for later claiming', async () => {
+    mockFetch([{ type: 'done', guideSlug: 'guest-guide-abc123456', isGuestGuide: true }])
+
+    render(<PromptBox isAuthenticated={false} />)
+    fireEvent.change(screen.getByTestId('prompt-input'), { target: { value: 'Cell biology' } })
+    fireEvent.click(screen.getByTestId('generate-button'))
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/guide/guest-guide-abc123456'))
+
+    expect(window.localStorage.getItem('flashguides.guest-guides')).toBe(
+      JSON.stringify(['guest-guide-abc123456']),
+    )
+  })
+
+  it('does not store guide slugs for authenticated generations', async () => {
+    mockFetch([{ type: 'done', guideSlug: 'user-guide-abc123456', isGuestGuide: false }])
+
+    render(<PromptBox isAuthenticated />)
+    fireEvent.change(screen.getByTestId('prompt-input'), { target: { value: 'Genetics' } })
+    fireEvent.click(screen.getByTestId('generate-button'))
+
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/guide/user-guide-abc123456'))
+
+    expect(window.localStorage.getItem('flashguides.guest-guides')).toBeNull()
+  })
+
   it('shows error message on network failure', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')))
 
@@ -121,6 +170,36 @@ describe('PromptBox', () => {
     fireEvent.click(screen.getByTestId('generate-button'))
 
     await waitFor(() => expect(screen.getByTestId('generation-error')).toBeDefined())
+  })
+
+  it('shows the API error message for failed file uploads', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: { message: 'We could not read text from that PDF. Try another file.' },
+          }),
+          {
+            status: 422,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      ),
+    )
+
+    render(<PromptBox />)
+    fireEvent.click(screen.getByTestId('input-tab-file'))
+    fireEvent.change(screen.getByTestId('prompt-file-input'), {
+      target: { files: [new File(['x'], 'notes.pdf', { type: 'application/pdf' })] },
+    })
+    fireEvent.click(screen.getByTestId('generate-button'))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('generation-error')).toHaveTextContent(
+        'We could not read text from that PDF. Try another file.',
+      ),
+    )
   })
 
   it('opens quota exhausted modal on QUOTA_EXCEEDED error event', async () => {
@@ -167,6 +246,44 @@ describe('PromptBox', () => {
     fireEvent.click(screen.getByTestId('generate-button'))
 
     await waitFor(() => expect(screen.getByTestId('streaming-progress')).toBeDefined())
+  })
+
+  it('stops an in-flight generation when the stop button is clicked', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, options?: RequestInit) => {
+        const signal = options?.signal as AbortSignal | undefined
+
+        return new Promise<Response>((resolve, reject) => {
+          signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+
+          resolve(
+            new Response(
+              new ReadableStream({
+                start() {
+                  // keep the stream open until aborted
+                },
+              }),
+              {
+                status: 200,
+                headers: { 'Content-Type': 'text/event-stream' },
+              },
+            ),
+          )
+        })
+      }),
+    )
+
+    render(<PromptBox />)
+    fireEvent.change(screen.getByTestId('prompt-input'), { target: { value: 'Black holes' } })
+    fireEvent.click(screen.getByTestId('generate-button'))
+
+    await waitFor(() => expect(screen.getByTestId('streaming-progress')).toBeDefined())
+
+    fireEvent.click(screen.getByTestId('cancel-generation-button'))
+
+    await waitFor(() => expect(screen.queryByTestId('streaming-progress')).not.toBeInTheDocument())
+    expect(screen.queryByTestId('generation-error')).not.toBeInTheDocument()
   })
 
   it('shows fetching step for URL input while source content is loading', async () => {

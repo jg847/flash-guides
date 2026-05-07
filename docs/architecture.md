@@ -54,7 +54,7 @@ Tests replace these with in-memory fakes or MSW-mocked network without touching 
 | `src/lib/guides/`          | Guide content parsing              | **SRP**: markdown/MDX parsing kept out of route files and UI components       |
 | `src/lib/db/repositories/` | Persistence helpers for aggregates | **SRP**: route handlers stay thin while repositories own write operations     |
 | `src/lib/logger/`          | Pino wrapper                       | **DIP**: callers depend on `ILogger` interface                                |
-| `src/lib/errors/`          | Error handler + Sentry hook        | **DIP**: error sinks behind interface                                         |
+| `src/lib/errors/`          | Error handler                      | **SRP**: shared API/app error shaping kept out of route files                 |
 | `src/lib/export/`          | Markdown / HTML / PDF builders     | **SRP**: one file per format                                                  |
 | `src/lib/sharing/`         | Share link + fork logic            | **SRP**                                                                       |
 | `src/lib/cli/`             | CLI helpers (for export-source.ts) | **SRP**                                                                       |

@@ -19,6 +19,14 @@ export async function normalizeInput(request: GenerationRequest): Promise<Normal
     }
   }
 
+  if (request.inputType === 'FILE') {
+    return {
+      type: request.inputType,
+      text: request.inputValue,
+      originalValue: request.sourceName ?? 'Uploaded file',
+    }
+  }
+
   const validatedUrl = urlSchema.parse(request.inputValue)
 
   if (isYouTubeUrl(validatedUrl)) {

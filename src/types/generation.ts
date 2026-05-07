@@ -1,9 +1,10 @@
-export type InputType = 'TOPIC' | 'TEXT' | 'URL'
+export type InputType = 'TOPIC' | 'TEXT' | 'URL' | 'FILE'
 export type StudyModeType = 'OVERVIEW' | 'DEEP_DIVE' | 'EXAM_PREP' | 'ELI5'
 
 export interface GenerationRequest {
   inputType: InputType
   inputValue: string
+  sourceName?: string
   studyMode: StudyModeType
 }
 
@@ -45,5 +46,5 @@ export interface GeneratedGuide {
 export type SSEEvent =
   | { type: 'step'; step: 'fetching' | 'planning' | 'writing' | 'done' }
   | { type: 'token'; text: string }
-  | { type: 'done'; guideSlug: string }
+  | { type: 'done'; guideSlug: string; isGuestGuide?: boolean }
   | { type: 'error'; message: string }

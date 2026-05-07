@@ -13,12 +13,31 @@ const INPUT_TABS: { value: InputType; label: string; placeholder: string }[] = [
   { value: 'TOPIC', label: 'Topic', placeholder: 'e.g. "The French Revolution"' },
   { value: 'TEXT', label: 'Text', placeholder: 'Paste your text here…' },
   { value: 'URL', label: 'URL', placeholder: 'https://…' },
+  { value: 'FILE', label: 'File', placeholder: '' },
 ]
 
-export default function PromptBox() {
+interface PromptBoxProps {
+  isAuthenticated?: boolean
+}
+
+const GUEST_GUIDE_STORAGE_KEY = 'flashguides.guest-guides'
+
+function persistGuestGuideSlug(slug: string) {
+  try {
+    const raw = window.localStorage.getItem(GUEST_GUIDE_STORAGE_KEY)
+    const current = raw ? (JSON.parse(raw) as string[]) : []
+    const next = Array.from(new Set([...current, slug])).slice(-20)
+    window.localStorage.setItem(GUEST_GUIDE_STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    // ignore localStorage errors
+  }
+}
+
+export default function PromptBox({ isAuthenticated = false }: PromptBoxProps) {
   const router = useRouter()
   const [inputType, setInputType] = useState<InputType>('TOPIC')
   const [inputValue, setInputValue] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [studyMode, setStudyMode] = useState<StudyModeType>('OVERVIEW')
   const [genState, setGenState] = useState<GenState>('idle')
   const [tokenPreview, setTokenPreview] = useState('')
@@ -35,10 +54,19 @@ export default function PromptBox() {
       : null
 
   const isGenerating = genState === 'fetching' || genState === 'planning' || genState === 'writing'
+  const canSubmit = inputType === 'FILE' ? Boolean(selectedFile) : Boolean(inputValue.trim())
+
+  function cancelGeneration() {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setGenState('idle')
+    setTokenPreview('')
+    setErrorMsg('')
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!inputValue.trim() || isGenerating) return
+    if (!canSubmit || isGenerating) return
 
     setGenState('fetching')
     setTokenPreview('')
@@ -49,15 +77,35 @@ export default function PromptBox() {
 
     let res: Response
     try {
-      res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inputType, inputValue, studyMode }),
-        signal: abort.signal,
-      })
+      if (inputType === 'FILE' && selectedFile) {
+        const formData = new FormData()
+        formData.set('inputType', inputType)
+        formData.set('studyMode', studyMode)
+        formData.set('file', selectedFile)
+
+        res = await fetch('/api/generate', {
+          method: 'POST',
+          body: formData,
+          signal: abort.signal,
+        })
+      } else {
+        res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputType, inputValue, studyMode }),
+          signal: abort.signal,
+        })
+      }
     } catch {
+      if (abort.signal.aborted) {
+        setGenState('idle')
+        abortRef.current = null
+        return
+      }
+
       setGenState('error')
       setErrorMsg('Network error, please try again')
+      abortRef.current = null
       return
     }
 
@@ -65,10 +113,23 @@ export default function PromptBox() {
       if (res.status === 429) {
         setQuotaOpen(true)
         setGenState('idle')
+        abortRef.current = null
         return
       }
+
+      let apiMessage = `Server error (${res.status})`
+      try {
+        const body = (await res.json()) as { error?: { message?: string } }
+        if (body.error?.message) {
+          apiMessage = body.error.message
+        }
+      } catch {
+        // ignore invalid error bodies
+      }
+
       setGenState('error')
-      setErrorMsg(`Server error (${res.status})`)
+      setErrorMsg(apiMessage)
+      abortRef.current = null
       return
     }
 
@@ -76,6 +137,7 @@ export default function PromptBox() {
     if (!reader) {
       setGenState('error')
       setErrorMsg('Unexpected response from server')
+      abortRef.current = null
       return
     }
 
@@ -113,6 +175,10 @@ export default function PromptBox() {
             setTokenPreview((prev) => prev + event.text)
           } else if (event.type === 'done') {
             setGenState('done')
+            if (!isAuthenticated && event.isGuestGuide) {
+              persistGuestGuideSlug(event.guideSlug)
+            }
+            abortRef.current = null
             router.push(`/guide/${event.guideSlug}`)
             return
           } else if (event.type === 'error') {
@@ -129,6 +195,7 @@ export default function PromptBox() {
               setGenState('error')
               setErrorMsg(event.message)
             }
+            abortRef.current = null
             return
           }
         }
@@ -137,7 +204,11 @@ export default function PromptBox() {
       if (!abort.signal.aborted) {
         setGenState('error')
         setErrorMsg('Stream interrupted, please try again')
+      } else {
+        setGenState('idle')
       }
+    } finally {
+      abortRef.current = null
     }
   }
 
@@ -148,10 +219,10 @@ export default function PromptBox() {
       <form
         onSubmit={handleSubmit}
         data-testid="prompt-box"
-        className="w-full space-y-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+        className="w-full space-y-4 rounded-[1.6rem] border border-zinc-300 bg-white/95 p-6 shadow-sm dark:border-zinc-700 dark:bg-black/90"
       >
         {/* Input mode tabs */}
-        <div className="flex gap-1 rounded-lg bg-zinc-100 p-1 dark:bg-zinc-800" role="tablist">
+        <div className="flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900" role="tablist">
           {INPUT_TABS.map((tab) => (
             <button
               key={tab.value}
@@ -162,12 +233,13 @@ export default function PromptBox() {
               onClick={() => {
                 setInputType(tab.value)
                 setInputValue('')
+                setSelectedFile(null)
               }}
               className={[
                 'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
                 inputType === tab.value
-                  ? 'bg-white shadow-sm text-zinc-900 dark:bg-zinc-700 dark:text-zinc-50'
-                  : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200',
+                  ? 'bg-white shadow-sm text-zinc-950 dark:bg-zinc-800 dark:text-zinc-50'
+                  : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200',
               ].join(' ')}
             >
               {tab.label}
@@ -176,28 +248,65 @@ export default function PromptBox() {
         </div>
 
         {/* Textarea */}
-        <textarea
-          data-testid="prompt-input"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          placeholder={currentTab?.placeholder ?? ''}
-          rows={inputType === 'TEXT' ? 8 : 3}
-          disabled={isGenerating}
-          className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-        />
+        {inputType === 'FILE' ? (
+          <label className="block rounded-xl border border-dashed border-zinc-600 bg-zinc-950/70 px-4 py-5 text-sm text-zinc-200 transition-colors hover:border-zinc-400">
+            <span className="block font-medium text-zinc-100">Upload a source file</span>
+            <span className="mt-1 block text-zinc-400">
+              PDF, text, markdown, JSON, CSV, code, and other readable files.
+            </span>
+            <input
+              type="file"
+              data-testid="prompt-file-input"
+              disabled={isGenerating}
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null
+                setSelectedFile(file)
+                setInputValue(file?.name ?? '')
+              }}
+              className="mt-4 block w-full cursor-pointer text-sm text-zinc-300 file:mr-4 file:rounded-full file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:font-medium file:text-zinc-950 hover:file:bg-zinc-200 disabled:opacity-50"
+            />
+            {selectedFile ? (
+              <span className="mt-3 block text-sm text-zinc-100">
+                Selected: {selectedFile.name}
+              </span>
+            ) : null}
+          </label>
+        ) : (
+          <textarea
+            data-testid="prompt-input"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder={currentTab?.placeholder ?? ''}
+            rows={inputType === 'TEXT' ? 8 : 3}
+            disabled={isGenerating}
+            className="w-full resize-none rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-950 placeholder-zinc-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-400"
+          />
+        )}
 
         {/* Study mode selector */}
         <StudyModeSelector value={studyMode} onChange={setStudyMode} />
 
         {/* Submit */}
-        <button
-          type="submit"
-          disabled={!inputValue.trim() || isGenerating}
-          data-testid="generate-button"
-          className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-        >
-          {isGenerating ? 'Generating…' : 'Generate →'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={!canSubmit || isGenerating}
+            data-testid="generate-button"
+            className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+          >
+            {isGenerating ? 'Generating…' : 'Generate →'}
+          </button>
+
+          <button
+            type="button"
+            onClick={cancelGeneration}
+            disabled={!isGenerating}
+            data-testid="cancel-generation-button"
+            className="rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-950 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:border-zinc-100 dark:hover:text-zinc-100"
+          >
+            Stop
+          </button>
+        </div>
 
         {/* Error */}
         {genState === 'error' && errorMsg && (

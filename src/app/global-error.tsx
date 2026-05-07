@@ -1,7 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
-import { captureError } from '@/lib/errors/sentry'
 import './globals.css'
 
 interface GlobalErrorProps {
@@ -10,13 +8,6 @@ interface GlobalErrorProps {
 }
 
 export default function GlobalError({ error, unstable_retry }: GlobalErrorProps) {
-  useEffect(() => {
-    void captureError(error, {
-      source: 'global-error',
-      digest: error.digest,
-    })
-  }, [error])
-
   return (
     <html lang="en">
       <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">

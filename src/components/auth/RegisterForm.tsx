@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, FormEvent } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 interface FieldErrors {
   email?: string[]
@@ -9,6 +10,8 @@ interface FieldErrors {
 }
 
 export function RegisterForm() {
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams?.get('callbackUrl') ?? '/dashboard'
   const [error, setError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [success, setSuccess] = useState(false)
@@ -60,7 +63,14 @@ export function RegisterForm() {
   if (success) {
     return (
       <div role="status" className="rounded-md bg-green-50 p-4 text-green-800 text-sm">
-        Check your email for a verification link before signing in.
+        Check your email for a verification link before signing in. After that, continue to{' '}
+        <a
+          href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+          className="font-medium underline underline-offset-2"
+        >
+          sign in
+        </a>
+        .
       </div>
     )
   }
@@ -146,7 +156,10 @@ export function RegisterForm() {
 
       <p className="text-center text-sm text-gray-600">
         Already have an account?{' '}
-        <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <a
+          href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+          className="font-medium text-indigo-600 hover:text-indigo-500"
+        >
           Sign in
         </a>
       </p>

@@ -75,13 +75,28 @@ export abstract class BaseGuideGenerator implements IStudyModeStrategy {
     input: NormalizedInput,
     modeKey: keyof typeof STUDY_MODE_INSTRUCTIONS,
   ): string {
+    const fileSpecificRequirements =
+      input.type === 'FILE'
+        ? `
+- This source came from an uploaded file. Ground the guide only in the extracted document text below.
+- Do not infer the topic from the filename, file extension, or generic knowledge about PDFs/documents.
+- If the extracted text is thin or noisy, stay conservative and summarize only what is actually present.`
+        : ''
+
     return `${STUDY_MODE_INSTRUCTIONS[modeKey]}
+
+Requirements:
+- Use all relevant information from the source material below; do not collapse specific facts into vague summaries.
+- Prefer thorough coverage over brevity when the source contains meaningful detail.
+- Include concrete examples, comparisons, edge cases, and explanations where the material supports them.
+- Make each section substantive enough that a student could study from it directly.
+${fileSpecificRequirements}
 
 Plan a study guide about the following topic/content. Output:
 1. First line: "TITLE: <guide title>"
 2. Then each section as "## <heading>" followed by a paragraph body.
 
 Topic/Content:
-${input.text.slice(0, 8000)}`
+${input.text.slice(0, 16000)}`
   }
 }

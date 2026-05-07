@@ -37,10 +37,7 @@ export function LoginForm() {
         return
       }
 
-      // Keep redirects on the current origin so session cookies survive host mismatches.
-      const redirectUrl = result.url
-        ? new URL(result.url, window.location.origin)
-        : new URL(callbackUrl, window.location.origin)
+      const redirectUrl = new URL(callbackUrl, window.location.origin)
       window.location.href = `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`
     } catch {
       setError('Network error. Please try again.')
@@ -50,7 +47,43 @@ export function LoginForm() {
   }
 
   async function handleGoogleSignIn() {
-    await signIn('google', { callbackUrl })
+    setError(null)
+    setLoading(true)
+
+    try {
+      const csrfResponse = await fetch('/api/auth/csrf')
+      if (!csrfResponse.ok) {
+        throw new Error('Unable to fetch CSRF token')
+      }
+
+      const csrfBody = (await csrfResponse.json()) as { csrfToken?: string }
+      if (!csrfBody.csrfToken) {
+        throw new Error('Missing CSRF token')
+      }
+
+      const response = await fetch('/api/auth/signin/google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Auth-Return-Redirect': '1',
+        },
+        body: new URLSearchParams({
+          csrfToken: csrfBody.csrfToken,
+          callbackUrl,
+        }),
+      })
+
+      const result = (await response.json()) as { url?: string }
+      if (!response.ok || !result.url) {
+        throw new Error('Unable to start Google sign in')
+      }
+
+      window.location.assign(result.url)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -64,6 +97,7 @@ export function LoginForm() {
       <button
         type="button"
         onClick={handleGoogleSignIn}
+        disabled={loading}
         className="w-full flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
@@ -148,7 +182,10 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-gray-600">
         Don&apos;t have an account?{' '}
-        <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+        <a
+          href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+          className="font-medium text-indigo-600 hover:text-indigo-500"
+        >
           Sign up
         </a>
       </p>

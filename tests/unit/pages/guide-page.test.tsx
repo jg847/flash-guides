@@ -38,8 +38,16 @@ vi.mock('next-mdx-remote/rsc', () => ({
 }))
 
 vi.mock('@/components/guide/GuideRenderer', () => ({
-  default: ({ guide }: { guide: { title: string } }) => (
-    <div data-testid="guide-renderer-mock">{guide.title}</div>
+  default: ({
+    guide,
+    isClaimableGuestGuide,
+  }: {
+    guide: { title: string }
+    isClaimableGuestGuide?: boolean
+  }) => (
+    <div data-testid="guide-renderer-mock" data-claimable={String(Boolean(isClaimableGuestGuide))}>
+      {guide.title}
+    </div>
   ),
 }))
 
@@ -61,6 +69,7 @@ describe('GuidePage', () => {
     mockFindUnique.mockResolvedValueOnce({
       id: 'g1',
       userId: null,
+      isWatermark: true,
       slug: 'react-basics',
       title: 'React Basics',
       studyMode: 'OVERVIEW',
@@ -74,12 +83,14 @@ describe('GuidePage', () => {
     render(jsx as React.ReactElement)
 
     expect(screen.getByTestId('guide-renderer-mock')).toHaveTextContent('React Basics')
+    expect(screen.getByTestId('guide-renderer-mock')).toHaveAttribute('data-claimable', 'true')
   })
 
   it('redirects to login when a private guide is not owned by the user', async () => {
     mockFindUnique.mockResolvedValueOnce({
       id: 'g1',
       userId: 'owner-1',
+      isWatermark: false,
       slug: 'react-basics',
       title: 'React Basics',
       studyMode: 'OVERVIEW',
@@ -91,6 +102,27 @@ describe('GuidePage', () => {
 
     await GuidePage({ params: Promise.resolve({ slug: 'react-basics' }) })
 
-    expect(mockRedirect).toHaveBeenCalledWith('/login')
+    expect(mockRedirect).toHaveBeenCalledWith('/login?callbackUrl=%2Fguide%2Freact-basics')
+  })
+
+  it('allows a guest watermark guide to render so it can be claimed after login', async () => {
+    mockFindUnique.mockResolvedValueOnce({
+      id: 'g1',
+      userId: null,
+      isWatermark: true,
+      slug: 'react-basics',
+      title: 'React Basics',
+      studyMode: 'OVERVIEW',
+      inputType: 'TOPIC',
+      inputValue: 'React',
+      content: '# React Basics',
+      isPublic: false,
+    })
+
+    const jsx = await GuidePage({ params: Promise.resolve({ slug: 'react-basics' }) })
+    render(jsx as React.ReactElement)
+
+    expect(mockRedirect).not.toHaveBeenCalled()
+    expect(screen.getByTestId('guide-renderer-mock')).toHaveAttribute('data-claimable', 'true')
   })
 })

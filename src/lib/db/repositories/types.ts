@@ -54,6 +54,7 @@ export interface UpdateGuideInput {
   title?: string
   folderId?: string | null
   isFavorite?: boolean
+  content?: string
 }
 
 export interface SetGuideTagsInput {

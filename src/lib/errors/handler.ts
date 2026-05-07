@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getLogger } from '@/lib/logger'
 import { getOrCreateRequestId, withRequestId } from '@/lib/logger/middleware'
-import { captureError } from '@/lib/errors/sentry'
 import { applySecurityHeaders } from '@/lib/security/headers'
 
 export interface ApiErrorResponseOptions {
@@ -64,10 +63,6 @@ export function handleApiError(error: unknown, requestOrId: Request | string): R
   const requestId = resolveRequestId(requestOrId)
 
   getLogger().error({ error, event: 'api.error.unhandled', requestId }, 'Unhandled API route error')
-  void captureError(error, {
-    source: 'api',
-    requestId,
-  })
 
   return createApiErrorResponse(requestId, {
     status: 500,

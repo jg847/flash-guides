@@ -210,4 +210,56 @@ describe('GenerationOrchestrator', () => {
     ])
     expect(mockCreate).not.toHaveBeenCalled()
   })
+
+  it('falls back to the assembled guide when streamed MDX is incomplete', async () => {
+    mockClient.streamGenerate.mockResolvedValue(
+      makeTextStream('# Test Guide\n\n## Section One\nComplete first section only.'),
+    )
+
+    const orch = new GenerationOrchestrator()
+    await collectEvents(orch.orchestrate({ request: baseRequest, session: null, req: guestReq }))
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          content: expect.stringContaining('## Section Two'),
+        }),
+      }),
+    )
+  })
+
+  it('uses a larger output budget for EXAM_PREP file uploads', async () => {
+    const orch = new GenerationOrchestrator()
+    const request: GenerationRequest = {
+      inputType: 'FILE',
+      inputValue: 'Long extracted file text',
+      sourceName: 'exam.pdf',
+      studyMode: 'EXAM_PREP',
+    }
+
+    await collectEvents(orch.orchestrate({ request, session: null, req: guestReq }))
+
+    expect(mockClient.streamGenerate).toHaveBeenCalledWith(expect.any(String), undefined, 10240)
+  })
+
+  it('persists uploaded-file guides as TEXT inputType while keeping the file name in inputValue', async () => {
+    const orch = new GenerationOrchestrator()
+    const request: GenerationRequest = {
+      inputType: 'FILE',
+      inputValue: 'Extracted file contents',
+      sourceName: '8-data-mining-overview.pdf',
+      studyMode: 'OVERVIEW',
+    }
+
+    await collectEvents(orch.orchestrate({ request, session: null, req: guestReq }))
+
+    expect(mockCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          inputType: 'TEXT',
+          inputValue: '8-data-mining-overview.pdf',
+        }),
+      }),
+    )
+  })
 })

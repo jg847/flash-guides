@@ -65,6 +65,7 @@ const mdxComponents = {
 interface GuideRendererProps {
   guide: Pick<Guide, 'id' | 'slug' | 'title' | 'studyMode' | 'inputType' | 'inputValue' | 'content'>
   isAuthenticated: boolean
+  isClaimableGuestGuide?: boolean
   isReadOnly?: boolean
   canShare?: boolean
 }
@@ -72,6 +73,7 @@ interface GuideRendererProps {
 export default async function GuideRenderer({
   guide,
   isAuthenticated,
+  isClaimableGuestGuide = false,
   isReadOnly = false,
   canShare = false,
 }: GuideRendererProps) {
@@ -100,11 +102,12 @@ export default async function GuideRenderer({
         guideId={guide.id}
         guideSlug={guide.slug}
         isAuthenticated={isAuthenticated}
+        isClaimableGuestGuide={isClaimableGuestGuide}
         isReadOnly={isReadOnly}
       >
-        <article className="space-y-6" data-testid="guide-renderer">
+        <article className="space-y-6 text-black dark:text-white" data-testid="guide-renderer">
           {parsed.intro ? (
-            <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <section className="rounded-2xl border border-zinc-300 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-black">
               <MDXRemote source={parsed.intro} components={mdxComponents} />
             </section>
           ) : null}

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { LoginForm } from '@/components/auth/LoginForm'
+
+const assignLocation = vi.fn()
+const fetchMock = vi.fn()
 
 // Mock next-auth/react
 const mockSignIn = vi.fn()
@@ -26,6 +29,15 @@ function fillForm(email = 'user@example.com', password = 'SecurePass1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: {
+      assign: assignLocation,
+      href: 'http://127.0.0.1:3000/login',
+      origin: 'http://127.0.0.1:3000',
+    },
+  })
+  vi.stubGlobal('fetch', fetchMock)
 })
 
 describe('LoginForm', () => {
@@ -79,17 +91,51 @@ describe('LoginForm', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/verify your email/i))
   })
 
-  it('calls signIn with google provider when Google button is clicked', async () => {
-    mockSignIn.mockResolvedValueOnce({})
+  it('starts Google sign-in through the same-origin auth endpoints', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ csrfToken: 'csrf-token' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ url: 'https://accounts.google.com/o/oauth2/v2/auth?state=abc' }),
+      })
+
+    render(<LoginForm />)
+    fireEvent.click(screen.getByRole('button', { name: /google/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/auth/csrf')
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      '/api/auth/signin/google',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Auth-Return-Redirect': '1',
+        }),
+      }),
+    )
+
+    expect(assignLocation).toHaveBeenCalledWith(
+      'https://accounts.google.com/o/oauth2/v2/auth?state=abc',
+    )
+  })
+
+  it('shows an error when Google sign-in setup fails', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({}),
+    })
 
     render(<LoginForm />)
     fireEvent.click(screen.getByRole('button', { name: /google/i }))
 
     await waitFor(() =>
-      expect(mockSignIn).toHaveBeenCalledWith(
-        'google',
-        expect.objectContaining({ callbackUrl: '/dashboard' }),
-      ),
+      expect(screen.getByRole('alert')).toHaveTextContent(/network error\. please try again\./i),
     )
   })
 
@@ -106,6 +152,9 @@ describe('LoginForm', () => {
     fireEvent.click(btn)
 
     await waitFor(() => expect(btn).toBeDisabled())
-    resolve!({ ok: true, error: null, url: '/dashboard' })
+    await act(async () => {
+      resolve!({ ok: true, error: null, url: '/dashboard' })
+      await pending
+    })
   })
 })

@@ -1,16 +1,48 @@
 import { z } from 'zod'
 import { auth } from '@/lib/auth'
-import { createApiErrorResponse, handleApiError } from '@/lib/errors/handler'
+import { ApiRouteError, createApiErrorResponse, handleApiError } from '@/lib/errors/handler'
+import { ReadableFileError, extractReadableFileText } from '@/lib/generation/file-extractor'
 import { generationOrchestrator } from '@/lib/generation/orchestrator'
 import { enforceGuestGenerationRateLimit } from '@/lib/rate-limit/middleware'
 import { sanitizeObjectStrings } from '@/lib/security/sanitize'
 import type { SSEEvent } from '@/types/generation'
 
 const generateSchema = z.object({
-  inputType: z.enum(['TOPIC', 'TEXT', 'URL']),
-  inputValue: z.string().min(1).max(50000),
+  inputType: z.enum(['TOPIC', 'TEXT', 'URL', 'FILE']),
+  inputValue: z.string().min(1).max(120000),
+  sourceName: z.string().min(1).max(255).optional(),
   studyMode: z.enum(['OVERVIEW', 'DEEP_DIVE', 'EXAM_PREP', 'ELI5']),
 })
+
+async function parseGenerateBody(req: Request): Promise<unknown> {
+  const contentType = req.headers.get('content-type') ?? ''
+
+  if (!contentType.includes('multipart/form-data')) {
+    return req.json()
+  }
+
+  const formData = await req.formData()
+  const inputType = formData.get('inputType')
+  const studyMode = formData.get('studyMode')
+  const file = formData.get('file')
+
+  if (inputType !== 'FILE') {
+    return { inputType, inputValue: '', studyMode }
+  }
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { inputType, inputValue: '', studyMode }
+  }
+
+  const inputValue = await extractReadableFileText(file)
+
+  return {
+    inputType,
+    inputValue,
+    sourceName: file.name,
+    studyMode,
+  }
+}
 
 function encodeSSE(event: SSEEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`
@@ -19,9 +51,26 @@ function encodeSSE(event: SSEEvent): string {
 export async function POST(req: Request): Promise<Response> {
   try {
     let body: unknown
+    const contentType = req.headers.get('content-type') ?? ''
     try {
-      body = await req.json()
-    } catch {
+      body = await parseGenerateBody(req)
+    } catch (error) {
+      if (error instanceof ReadableFileError) {
+        return createApiErrorResponse(req, {
+          status: error.code === 'UNSUPPORTED_FILE_TYPE' ? 415 : 422,
+          code: error.code,
+          message: error.message,
+        })
+      }
+
+      if (contentType.includes('multipart/form-data')) {
+        throw new ApiRouteError({
+          status: 502,
+          code: 'FILE_PROCESSING_FAILED',
+          message: 'We could not process that uploaded file. Please try again.',
+        })
+      }
+
       return createApiErrorResponse(req, {
         status: 400,
         code: 'INVALID_JSON',

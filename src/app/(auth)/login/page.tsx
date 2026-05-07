@@ -8,14 +8,12 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-black px-4 py-12 text-white">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to FlashGuides
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Sign in to FlashGuides</h1>
         </div>
-        <div className="rounded-lg bg-white px-8 py-10 shadow">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 shadow-2xl shadow-black/30">
           <Suspense>
             <LoginForm />
           </Suspense>
