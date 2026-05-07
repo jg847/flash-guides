@@ -275,8 +275,9 @@ export default function FollowUpChat({
 
   const lastAssistantMessageLength = useMemo(() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index]?.kind === 'chat' && messages[index]?.role === 'assistant') {
-        return messages[index]?.content.length ?? 0
+      const entry = messages[index]
+      if (entry?.kind === 'chat' && entry.role === 'assistant') {
+        return entry.content.length
       }
     }
 

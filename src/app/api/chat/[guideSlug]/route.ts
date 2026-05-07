@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages'
 import { auth } from '@/lib/auth'
 import { getSessionUserId } from '@/lib/auth/session'
 import { claudeClient } from '@/lib/ai/claude'
@@ -43,7 +44,7 @@ const proposalToolSchema = z.object({
   rationale: z.string().trim().min(1).max(500),
 })
 
-const followUpChatTools = [
+const followUpChatTools: Tool[] = [
   {
     name: 'propose_section_edit',
     description:
@@ -66,7 +67,7 @@ const followUpChatTools = [
       required: ['op', 'heading', 'body_markdown', 'rationale'],
     },
   },
-] as const
+]
 
 function isPlaywrightTestEnabled(): boolean {
   return process.env['PLAYWRIGHT_TEST'] === '1'
@@ -94,6 +95,10 @@ function normalizeMessages(messages: FollowUpChatMessage[]): FollowUpChatMessage
   }
 
   const firstUserMessage = withoutEmptyAssistantPlaceholders[firstUserIndex]
+  if (!firstUserMessage) {
+    return withoutEmptyAssistantPlaceholders.slice(-20)
+  }
+
   const remainingMessages = withoutEmptyAssistantPlaceholders.slice(firstUserIndex + 1).slice(-19)
 
   return [firstUserMessage, ...remainingMessages]
@@ -314,7 +319,7 @@ export async function POST(
             model: 'claude-sonnet-4-5',
             system: guideContext,
             messages: normalizedMessages,
-            tools: followUpChatTools,
+            tools: [...followUpChatTools],
             max_tokens: 4096,
           })
 

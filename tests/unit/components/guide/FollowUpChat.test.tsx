@@ -22,7 +22,22 @@ vi.mock('next/navigation', () => ({
 
 import FollowUpChat from '@/components/guide/FollowUpChat'
 
-function makeStreamResponse(events: Array<{ type: string; text?: string; message?: string }>) {
+type MockChatEvent =
+  | { type: 'token'; text: string }
+  | { type: 'done' }
+  | { type: 'error'; message: string }
+  | {
+      type: 'proposal'
+      id: string
+      op: 'append_section' | 'replace_section' | 'insert_section_after'
+      heading: string
+      body_markdown: string
+      after_heading?: string
+      rationale: string
+    }
+  | { type: 'suggestions'; suggestions: string[] }
+
+function makeStreamResponse(events: MockChatEvent[]) {
   const encoder = new TextEncoder()
 
   return new ReadableStream<Uint8Array>({

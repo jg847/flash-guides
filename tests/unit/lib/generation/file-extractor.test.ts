@@ -33,7 +33,7 @@ vi.mock('@/lib/ai/claude', () => ({
   },
 }))
 
-import { ReadableFileError, extractReadableFileText } from '@/lib/generation/file-extractor'
+import { extractReadableFileText } from '@/lib/generation/file-extractor'
 
 describe('extractReadableFileText', () => {
   beforeEach(() => {
@@ -92,7 +92,7 @@ describe('extractReadableFileText', () => {
       { type: 'application/pdf' },
     )
 
-    await expect(extractReadableFileText(file)).rejects.toMatchObject<Partial<ReadableFileError>>({
+    await expect(extractReadableFileText(file)).rejects.toMatchObject({
       code: 'UNREADABLE_FILE',
     })
   })
@@ -143,7 +143,7 @@ describe('extractReadableFileText', () => {
       type: 'application/pdf',
     })
 
-    await expect(extractReadableFileText(file)).rejects.toMatchObject<Partial<ReadableFileError>>({
+    await expect(extractReadableFileText(file)).rejects.toMatchObject({
       code: 'UNREADABLE_FILE',
       message:
         'We could not OCR that PDF. It may be encrypted, malformed, too large, or otherwise unsupported.',
@@ -185,7 +185,7 @@ describe('extractReadableFileText', () => {
       type: 'application/octet-stream',
     })
 
-    await expect(extractReadableFileText(file)).rejects.toMatchObject<Partial<ReadableFileError>>({
+    await expect(extractReadableFileText(file)).rejects.toMatchObject({
       code: 'UNSUPPORTED_FILE_TYPE',
     })
   })

@@ -6,6 +6,7 @@ import { generateSlug } from './slug'
 import { normalizeInput } from './input-normalizer'
 import { sanitizeGuideContentForMdx } from '@/lib/guides/content'
 import { checkAndIncrementQuota, extractIp } from '@/lib/guest/quota'
+import type { InputType as PrismaInputType } from '@/generated/prisma'
 import type {
   GenerationRequest,
   GeneratedGuide,
@@ -21,9 +22,7 @@ export interface OrchestratorContext {
   skipGuestQuotaCheck?: boolean
 }
 
-function getPersistedInputType(
-  request: GenerationRequest,
-): Exclude<GenerationRequest['inputType'], 'FILE'> {
+function getPersistedInputType(request: GenerationRequest): PrismaInputType {
   return request.inputType === 'FILE' ? 'TEXT' : request.inputType
 }
 
@@ -238,6 +237,7 @@ ${builder.build()}`
     await prisma.guide.create({
       data: {
         ...guideData,
+        inputType: persistedInputType,
         isPublic: false,
       },
     })
