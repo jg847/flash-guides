@@ -43,8 +43,12 @@ function getRemoteDatabaseAuthToken(): string | undefined {
   )
 }
 
+function getBetterSqliteAdapterModuleName(): string {
+  return ['@prisma', 'adapter-better-sqlite3'].join('/')
+}
+
 async function createLocalPrismaAdapter(databaseUrl: string): Promise<PrismaDriverAdapter> {
-  const sqliteAdapterModule = requireModule('@prisma/adapter-better-sqlite3') as {
+  const sqliteAdapterModule = requireModule(getBetterSqliteAdapterModuleName()) as {
     PrismaBetterSqlite3: new (config: { url: string }) => PrismaDriverAdapter
   }
 
