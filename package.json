@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "pnpm db:generate && pnpm db:migrate:prod && pnpm build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
