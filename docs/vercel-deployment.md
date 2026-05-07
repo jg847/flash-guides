@@ -16,7 +16,7 @@ Use [vercel-env-checklist.md](./vercel-env-checklist.md) for a redacted migratio
 
 1. Create a new Vercel project and import this repository.
 2. In Project Settings, confirm the framework is Next.js.
-3. In Project Settings -> Build and Deployment, leave the install command as Vercel's default for pnpm.
+3. In Project Settings -> Build and Deployment, use the install command from `vercel.json`, which skips optional local-only SQLite packages on Vercel.
 4. In Project Settings -> Build and Deployment, set the build command to `pnpm db:generate && pnpm build` if Vercel does not pick it up from `vercel.json`.
 5. In Project Settings -> Environment Variables, copy the keys from [.env.vercel.example](../.env.vercel.example).
 6. Apply each variable to `Production`. Add them to `Preview` too if you want preview deployments to function fully.
@@ -74,6 +74,7 @@ If you keep the default Vercel domain, use that hostname until your custom domai
 
 - Local development can keep using `DATABASE_URL=file:./data/dev.db`.
 - Production on Vercel should not use `file:` SQLite because the filesystem is ephemeral.
+- `better-sqlite3` is kept as an optional local-only dependency, and Vercel skips optional installs so native SQLite build scripts do not run there.
 - `vercel.json` already ensures Prisma client generation runs during Vercel builds.
 - Email and redirect links automatically use `NEXT_PUBLIC_APP_URL`, `AUTH_URL`, `NEXTAUTH_URL`, or Vercel-provided host variables, in that order.
 
