@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db/client'
 import GuideCard from '@/components/guides/GuideCard'
 
-export const revalidate = 300 // ISR: revalidate every 5 minutes
+export const dynamic = 'force-dynamic'
 
 export default async function GalleryPage() {
   const guides = await prisma.guide.findMany({

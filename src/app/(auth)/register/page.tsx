@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { RegisterForm } from '@/components/auth/RegisterForm'
 
@@ -14,7 +15,9 @@ export default function RegisterPage() {
           <p className="mt-2 text-sm text-zinc-400">Start building and sharing guides today.</p>
         </div>
         <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-8 py-10 shadow-2xl shadow-black/30">
-          <RegisterForm />
+          <Suspense fallback={<div className="text-sm text-zinc-400">Loading form...</div>}>
+            <RegisterForm />
+          </Suspense>
         </div>
       </div>
     </main>

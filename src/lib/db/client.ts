@@ -15,20 +15,36 @@ function getDatabaseUrl(): string {
   return databaseUrl
 }
 
-const adapter =
-  globalForPrisma.prismaAdapter ??
-  new PrismaBetterSqlite3({
-    url: getDatabaseUrl(),
-  })
+function getPrismaAdapter(): PrismaBetterSqlite3 {
+  if (!globalForPrisma.prismaAdapter) {
+    globalForPrisma.prismaAdapter = new PrismaBetterSqlite3({
+      url: getDatabaseUrl(),
+    })
+  }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter,
-    log: process.env['NODE_ENV'] === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  })
+  return globalForPrisma.prismaAdapter
+}
+
+function getPrismaClient(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient({
+      adapter: getPrismaAdapter(),
+      log: process.env['NODE_ENV'] === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    })
+  }
+
+  return globalForPrisma.prisma
+}
+
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, property, receiver) {
+    const client = getPrismaClient()
+    const value = Reflect.get(client as object, property, receiver)
+
+    return typeof value === 'function' ? value.bind(client) : value
+  },
+}) as PrismaClient
 
 if (process.env['NODE_ENV'] !== 'production') {
-  globalForPrisma.prisma = prisma
-  globalForPrisma.prismaAdapter = adapter
+  getPrismaClient()
 }
