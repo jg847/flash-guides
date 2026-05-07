@@ -6,6 +6,10 @@ const globalForPrisma = globalThis as unknown as {
   prismaAdapter: SqlMigrationAwareDriverAdapterFactory | undefined
 }
 
+const importOptionalModule = new Function('moduleName', 'return import(moduleName)') as (
+  moduleName: string,
+) => Promise<unknown>
+
 export function getDatabaseUrl(): string {
   const databaseUrl = process.env['DATABASE_URL']
   if (!databaseUrl) {
@@ -39,7 +43,11 @@ function getRemoteDatabaseAuthToken(): string | undefined {
 async function createLocalPrismaAdapter(
   databaseUrl: string,
 ): Promise<SqlMigrationAwareDriverAdapterFactory> {
-  const { PrismaBetterSqlite3 } = await import('@prisma/adapter-better-sqlite3')
+  const sqliteAdapterModule = (await importOptionalModule('@prisma/adapter-better-sqlite3')) as {
+    PrismaBetterSqlite3: new (config: { url: string }) => SqlMigrationAwareDriverAdapterFactory
+  }
+
+  const { PrismaBetterSqlite3 } = sqliteAdapterModule
 
   return new PrismaBetterSqlite3({
     url: databaseUrl,
