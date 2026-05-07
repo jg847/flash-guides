@@ -2,6 +2,7 @@ import Link from 'next/link'
 import PromptBox from '@/components/chat/PromptBox'
 import { auth, signOut } from '@/lib/auth'
 import { prisma } from '@/lib/db/client'
+import { getLogger } from '@/lib/logger'
 
 async function getHomePageState() {
   const session = await auth()
@@ -23,7 +24,14 @@ async function getHomePageState() {
 }
 
 export default async function HomePage() {
-  const { session, savedGuideCount } = await getHomePageState()
+  let session = null
+  let savedGuideCount: number | null = null
+
+  try {
+    ;({ session, savedGuideCount } = await getHomePageState())
+  } catch (error) {
+    getLogger().error({ error, event: 'homepage.state.failed' }, 'Homepage state load failed')
+  }
 
   return (
     <main className="relative flex flex-1 flex-col items-center justify-start overflow-hidden bg-[radial-gradient(circle_at_top,_#fff4db_0,_#fffaf1_28%,_#ffffff_58%,_#f4f4f5_100%)] px-4 py-16 text-zinc-950 transition-colors dark:bg-[radial-gradient(circle_at_top,_#27272a_0,_#09090b_42%,_#000000_100%)] dark:text-zinc-50 sm:px-8">

@@ -79,4 +79,18 @@ describe('GuestBanner', () => {
     render(jsx as React.ReactElement)
     expect(screen.getByRole('banner')).toBeInTheDocument()
   })
+
+  it('returns null when auth lookup fails', async () => {
+    mockAuth.mockRejectedValueOnce(new Error('auth failed'))
+
+    const jsx = await GuestBanner()
+    expect(jsx).toBeNull()
+  })
+
+  it('returns null when quota lookup fails', async () => {
+    mockGetQuotaStatus.mockRejectedValueOnce(new Error('quota failed'))
+
+    const jsx = await GuestBanner()
+    expect(jsx).toBeNull()
+  })
 })

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { hasAuthenticatedUser } from '@/lib/auth/session'
 import { getQuotaStatus } from '@/lib/guest/quota'
+import { getLogger } from '@/lib/logger'
 import { headers } from 'next/headers'
 
 /**
@@ -10,17 +11,27 @@ import { headers } from 'next/headers'
  * daily quota usage and a sign-up CTA. Returns null for logged-in users.
  */
 export default async function GuestBanner() {
-  const session = await auth()
+  let used: number | null = null
+  let limit: number | null = null
 
-  // Do not show the banner to authenticated users
-  if (hasAuthenticatedUser(session)) return null
+  try {
+    const session = await auth()
 
-  // Extract IP from incoming request headers (available in RSC via next/headers)
-  const headersList = await headers()
-  const forwarded = headersList.get('x-forwarded-for')
-  const ip = forwarded ? (forwarded.split(',')[0]?.trim() ?? 'unknown') : 'unknown'
+    // Do not show the banner to authenticated users
+    if (hasAuthenticatedUser(session)) return null
 
-  const { used, limit } = await getQuotaStatus(ip)
+    // Extract IP from incoming request headers (available in RSC via next/headers)
+    const headersList = await headers()
+    const forwarded = headersList.get('x-forwarded-for')
+    const ip = forwarded ? (forwarded.split(',')[0]?.trim() ?? 'unknown') : 'unknown'
+
+    const quotaStatus = await getQuotaStatus(ip)
+    used = quotaStatus.used
+    limit = quotaStatus.limit
+  } catch (error) {
+    getLogger().error({ error, event: 'guest-banner.render.failed' }, 'Guest banner render failed')
+    return null
+  }
 
   return (
     <div
